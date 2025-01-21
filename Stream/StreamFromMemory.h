@@ -2,7 +2,6 @@
 #define STREAMFROMMEMORY_H
 #include "Stream.h"
 
-
 class StreamFromMemory : public Stream {
     int line_number = 0;
     vector<pair<int, int>> lines = {};
@@ -12,7 +11,5 @@ class StreamFromMemory : public Stream {
         pair<int, int> readStream() override;
 
 };
-
-
 
 #endif //STREAMFROMMEMORY_H

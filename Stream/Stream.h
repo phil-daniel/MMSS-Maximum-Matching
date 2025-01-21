@@ -12,6 +12,4 @@ class Stream {
         virtual pair<int, int> readStream() = 0;
 };
 
-
-
 #endif

@@ -9,4 +9,5 @@ add_executable(MaximumMatchings
         Stream/StreamFromMemory.h
         Stream/StreamFromMemory.cpp
         Stream/StreamFromFile.h
-        Stream/StreamFromFile.cpp)
+        Stream/StreamFromFile.cpp
+        Structures/FreeNodeStructure.cpp)

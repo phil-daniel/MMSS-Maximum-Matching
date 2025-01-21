@@ -8,15 +8,70 @@
 
 using namespace std;
 
-int main() {
+typedef pair<int,int> Edge;
+typedef set<Edge> Matching;
+typedef unordered_map<Edge,int> MatchingToLabel;
 
-    Stream* stream = new StreamFromFile("example.txt");
-    //Stream* stream = new StreamFromMemory("example.txt");
+vector<vector<Edge>> alg_phase(Stream* stream, Matching matching, float epsilon, float scale) {
+    vector<vector<Edge>> disjoint_augmenting_paths = {};
 
+    MatchingToLabel matching_to_label;
+
+    int path_limit = static_cast<int>(6 / scale) + 1;
+    int pass_bundles_max = static_cast<int>(72 / (scale * epsilon));
+
+    // Setting the current distance for each matched edge to infinity.
+    for (Edge edge : matching) {
+        matching_to_label[edge] = numeric_limits<int>::max();
+    }
+
+    for (int pass_bundle = 0; pass_bundle < pass_bundles_max; pass_bundle++) {
+
+    }
+
+
+    return disjoint_augmenting_paths;
+}
+
+Matching augment_matching(Matching matching, vector<vector<Edge>> disjoint_augmenting_paths) {
+    // Takes a vector (list) of disjoint augmenting paths and adds them to the matching.
+
+    for (vector<Edge> augmenting_path : disjoint_augmenting_paths) {
+        for (Edge edge : augmenting_path) {
+            // If the edge isn't in the matching, we add it to the matching.
+            // Otherwise we remove it from the matching.
+            if (matching.find(edge) == matching.end()) {
+                matching.insert(edge);
+            } else {
+                matching.erase(edge);
+            }
+        }
+    }
+
+    return matching;
+}
+
+Matching algorithm(Stream* stream, Matching matching, float epsilon) {
+
+    float scale_limit = (epsilon * epsilon) / 64;
+
+    for (float scale = 1/2; scale <= scale_limit; scale *= 1/2) {
+        float phase_limit = 144 / (scale * epsilon);
+
+        for (float phase = 1; phase <= phase_limit; phase++) {
+            vector<vector<Edge>> disjoint_augmenting_paths = {};
+            matching = augment_matching(matching, disjoint_augmenting_paths);
+        }
+    }
+
+    return matching;
+}
+
+Matching get_2_approximate_matching(Stream* stream) {
     std::set<int> involved_in_matching = set<int>();
-    vector<pair<int,int>> matches;
+    Matching matching;
 
-    pair<int,int> edge = stream->readStream();
+    Edge edge = stream->readStream();
     // edges are only -1 if we have reached the end of the stream.
     while (edge.first != -1) {
 
@@ -27,13 +82,23 @@ int main() {
         ) {
             involved_in_matching.insert(edge.first);
             involved_in_matching.insert(edge.second);
-            matches.emplace_back(edge);
+            matching.insert(edge);
         }
 
         edge = stream->readStream();
     }
 
-    std::cout << "Matching size: " << involved_in_matching.size() << std::endl;
+    return matching;
+}
+
+int main() {
+
+    //Stream* stream = new StreamFromFile("example.txt");
+    Stream* stream = new StreamFromMemory("example.txt");
+
+    Matching matching = get_2_approximate_matching(stream);
+
+    std::cout << "Matching size: " << matching.size() << std::endl;
 
     return 0;
 }
