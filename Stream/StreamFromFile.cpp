@@ -1,14 +1,14 @@
-#include "Stream.h"
+#include "StreamFromFile.h"
 
 #include <string>
 
 using namespace std;
 
-Stream::Stream(string file_name) {
+StreamFromFile::StreamFromFile(string file_name) {
     file = ifstream(file_name);
 }
 
-pair<int, int> Stream::readStream() {
+pair<int, int> StreamFromFile::readStream() {
     string line;
 
     // Occurs when we are at the end of the stream.

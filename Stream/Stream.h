@@ -7,12 +7,9 @@ using namespace std;
 
 class Stream {
 
-    ifstream file{};
-
     public:
-        pair<int, int> readStream();
-
-        Stream(string file_name);
+        virtual ~Stream(void){};
+        virtual pair<int, int> readStream() = 0;
 };
 
 

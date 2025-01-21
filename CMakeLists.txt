@@ -5,5 +5,8 @@ set(CMAKE_CXX_STANDARD 14)
 
 add_executable(MaximumMatchings
     maxMatching.cpp
-        Stream.h
-        Stream.cpp)
+        Stream/Stream.h
+        Stream/StreamFromMemory.h
+        Stream/StreamFromMemory.cpp
+        Stream/StreamFromFile.h
+        Stream/StreamFromFile.cpp)

@@ -2,18 +2,21 @@
 #include <iostream>
 #include <set>
 
-#include "Stream.h"
+#include "Stream/Stream.h"
+#include "Stream/StreamFromFile.h"
+#include "Stream/StreamFromMemory.h"
 
 using namespace std;
 
 int main() {
 
-    Stream stream("example.txt");
+    Stream* stream = new StreamFromFile("example.txt");
+    //Stream* stream = new StreamFromMemory("example.txt");
 
     std::set<int> involved_in_matching = set<int>();
     vector<pair<int,int>> matches;
 
-    pair<int,int> edge = stream.readStream();
+    pair<int,int> edge = stream->readStream();
     // edges are only -1 if we have reached the end of the stream.
     while (edge.first != -1) {
 
@@ -27,7 +30,7 @@ int main() {
             matches.emplace_back(edge);
         }
 
-        edge = stream.readStream();
+        edge = stream->readStream();
     }
 
     std::cout << "Matching size: " << involved_in_matching.size() << std::endl;
