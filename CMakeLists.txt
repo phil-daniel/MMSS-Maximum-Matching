@@ -4,4 +4,6 @@ project(MaximumMatchings)
 set(CMAKE_CXX_STANDARD 14)
 
 add_executable(MaximumMatchings
-    maxMatching.cpp)
+    maxMatching.cpp
+        Stream.h
+        Stream.cpp)
