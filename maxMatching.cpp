@@ -40,17 +40,30 @@ void extend_active_path(
             continue;
         }
 
-        // TODO: Case 2 - to do with blossoms
+        // TODO: Case 2 - to do with blossoms - NEED TO ADD OTHER CASES
+        else if (
+            false
+            || false
+            || matching.find(edge) != matching.end()
+        ) {
+            continue;
+        }
 
         // If the first vertex is in a "marked" or "on hold" structure, we skip this edge.
-        if (
-            vertex_to_free_node_struct.count(edge.first)
-            && (
+        else if (
+            vertex_to_free_node_struct.count(edge.first) &&
+                (
                 vertex_to_free_node_struct[edge.first]->modified
                 || vertex_to_free_node_struct[edge.first]->on_hold
             )
         ) {
             continue;
+        }
+
+        // TODO: CASE 4
+
+        else {
+            // TODO: MAIN PART
         }
 
 
@@ -84,7 +97,6 @@ vector<vector<Edge>> alg_phase(
     }
 
     for (int pass_bundle = 0; pass_bundle < pass_bundles_max; pass_bundle++) {
-        // TODO: CHECK EACH OF THE FREE VERTEX STRUCTURES HERE
         for (FreeNodeStructure free_node_struct : free_node_structs) {
             if (free_node_struct.vertices_count >= path_limit) free_node_struct.on_hold = true;
             else free_node_struct.on_hold = false;
@@ -92,6 +104,9 @@ vector<vector<Edge>> alg_phase(
         }
 
         // TODO: IMPLEMENT ALGORITHM HERE!
+        // EXTEND-ACTIVE-PATH()
+        // CONTRACT-AND-AUGMENT()
+        // BACKTRACK-STUCK-STRUCTURES()
     }
 
 

@@ -11,6 +11,10 @@ add_executable(MaximumMatchings
         Stream/StreamFromFile.h
         Stream/StreamFromFile.cpp
         Structures/FreeNodeStructure.cpp
+        Structures/GraphNode/GraphNode.h
+        Structures/GraphNode/GraphVertex.h
+        Structures/GraphNode/GraphVertex.cpp
+        Structures/GraphNode/GraphBlossom.cpp
 )
 
 include_directories(~/Programs/cpp_libs/boost_1_87_0/)
