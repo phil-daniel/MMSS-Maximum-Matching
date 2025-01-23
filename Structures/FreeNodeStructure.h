@@ -13,7 +13,7 @@ class FreeNodeStructure {
         bool on_hold = false;
         bool modified = false;
         int vertices_count = 0;
-        int working_vertex;
+        GraphNode* working_vertex;
     private:
         unordered_map<int, GraphNode*> vertex_to_graph_node;
 

@@ -20,7 +20,29 @@ typedef pair<Vertex, Vertex> Edge;
 typedef set<Edge> Matching;
 typedef unordered_map<Edge, int, boost::hash<Edge>> MatchingToLabel;
 
-vector<Edge> getLeafToRootPath(GraphNode* leaf) {
+void backtrackStuckStructures(
+    vector<FreeNodeStructure>* free_node_structs
+) {
+    for (FreeNodeStructure* structure : free_node_structs) {
+        // If the structure is on hold or has been modified then it isn't stuck and hence doesn't
+        // need modifying.
+        if (structure->on_hold || structure->modified) {
+            // TODO: Make structure inactive
+        }
+
+        // Updating the working node to the previous outer vertex (i.e. parent of the parent of the current).
+        GraphNode* new_working_node = structure->working_vertex;
+        if (new_working_node->parent != nullptr) {
+            new_working_node = new_working_node->parent->parent;
+        }
+
+        structure->working_vertex = new_working_node;
+    }
+}
+
+vector<Edge> getLeafToRootPath(
+    GraphNode* leaf
+) {
     vector<Edge> path = {};
     GraphNode* current = leaf;
     GraphNode* parent = leaf->parent;
@@ -97,6 +119,20 @@ vector<vector<Edge>> augment(
     return disjoint_augmenting_paths;
 }
 
+void contract(
+    Edge unmatched_arc,
+    FreeNodeStructure* structure
+) {
+    // TODO: Need to implement
+}
+
+void overtake(
+    Edge unmatched_arc
+) {
+    // TODO: Need to implement
+}
+
+
 void extendActivePath(
     Stream* stream,
     Matching matching,
@@ -136,7 +172,7 @@ void extendActivePath(
                 struct_of_u != nullptr && struct_of_v != nullptr &&
                 struct_of_u->getGraphNodeFromVertex(edge.first) == struct_of_v->getGraphNodeFromVertex(edge.second)
             ) ||
-            (struct_of_u != nullptr && struct_of_u->working_vertex != edge.first) ||
+            (struct_of_u != nullptr && struct_of_u->working_vertex != struct_of_u->getGraphNodeFromVertex(edge.first)) ||
             matching.find(edge) != matching.end()
         ) {
             edge = stream->readStream();
@@ -160,7 +196,7 @@ void extendActivePath(
             if (struct_of_u == struct_of_v) {
                 // TODO: CONTRACT();
             } else {
-                // TODO: AUGMENT();
+                disjoint_augmenting_paths = augment(disjoint_augmenting_paths, edge, vertex_to_free_node_struct);
             }
         }
 
@@ -209,7 +245,7 @@ vector<vector<Edge>> algPhase(
         // TODO: IMPLEMENT ALGORITHM HERE!
         // EXTEND-ACTIVE-PATH()
         // CONTRACT-AND-AUGMENT()
-        // BACKTRACK-STUCK-STRUCTURES()
+        backtrackStuckStructures(&free_node_structs);
     }
 
 
