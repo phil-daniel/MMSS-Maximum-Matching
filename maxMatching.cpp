@@ -18,7 +18,7 @@ typedef pair<Vertex, Vertex> Edge;
 typedef set<Edge> Matching;
 typedef unordered_map<Edge, int, boost::hash<Edge>> MatchingToLabel;
 
-void extend_active_path(
+void extendActivePath(
     Stream* stream,
     Matching matching,
     float epsilon,
@@ -32,38 +32,62 @@ void extend_active_path(
     Edge edge = stream->readStream();
     // edges are only -1 if we have reached the end of the stream.
     while (edge.first != -1) {
-        // If we have "removed" one of the vertices from the graph, we skip this edge.
+        // Case 1 - If we have "removed" one of the vertices from the graph, we skip this edge.
         if (
-            removed_vertices.find(edge.first) != removed_vertices.end()
-            || removed_vertices.find(edge.second) != removed_vertices.end()
+            removed_vertices.find(edge.first) != removed_vertices.end() ||
+            removed_vertices.find(edge.second) != removed_vertices.end()
         ) {
+            edge = stream->readStream();
             continue;
         }
 
-        // TODO: Case 2 - to do with blossoms - NEED TO ADD OTHER CASES
-        else if (
-            false
-            || false
-            || matching.find(edge) != matching.end()
+        // Case 2: If vertex1 is in the same blossom as vertex2, vertex1 isn't a working vertex
+        // or the edge is already matched, we skip this edge.
+        FreeNodeStructure* struct_of_u = nullptr;
+        if (vertex_to_free_node_struct.count(edge.first) > 0) {
+            struct_of_u = vertex_to_free_node_struct[edge.first];
+        }
+        FreeNodeStructure* struct_of_v = nullptr;
+        if (vertex_to_free_node_struct.count(edge.first) > 0) {
+            struct_of_v = vertex_to_free_node_struct[edge.first];
+        }
+
+        if (
+            (
+                struct_of_u != nullptr && struct_of_v != nullptr &&
+                struct_of_u->getGraphNodeFromVertex(edge.first) == struct_of_v->getGraphNodeFromVertex(edge.second)
+            ) ||
+            (struct_of_u != nullptr && struct_of_u->working_vertex != edge.first) ||
+            matching.find(edge) != matching.end()
         ) {
+            edge = stream->readStream();
             continue;
         }
 
-        // If the first vertex is in a "marked" or "on hold" structure, we skip this edge.
-        else if (
+        // Case 3: If the first vertex is in a "marked" or "on hold" structure, we skip this edge.
+        if (
             vertex_to_free_node_struct.count(edge.first) &&
-                (
-                vertex_to_free_node_struct[edge.first]->modified
-                || vertex_to_free_node_struct[edge.first]->on_hold
+            (
+                vertex_to_free_node_struct[edge.first]->modified ||
+                vertex_to_free_node_struct[edge.first]->on_hold
             )
         ) {
+            edge = stream->readStream();
             continue;
         }
 
-        // TODO: CASE 4
+        // TODO: CASE 4 OUTER VERTEX
+        if (true) {
+            if (struct_of_u == struct_of_v) {
+                // TODO: CONTRACT();
+            } else {
+                // TODO: AUGMENT();
+            }
+        }
 
+        // TODO: CASE 5
         else {
-            // TODO: MAIN PART
+
         }
 
 
@@ -74,7 +98,7 @@ void extend_active_path(
 }
 
 
-vector<vector<Edge>> alg_phase(
+vector<vector<Edge>> algPhase(
     Stream* stream,
     Matching matching,
     float epsilon,
@@ -113,7 +137,7 @@ vector<vector<Edge>> alg_phase(
     return disjoint_augmenting_paths;
 }
 
-Matching augment_matching(
+Matching augmentMatching(
     Matching matching,
     vector<vector<Edge>> disjoint_augmenting_paths
 ) {
@@ -147,14 +171,14 @@ Matching algorithm(
 
         for (float phase = 1; phase <= phase_limit; phase++) {
             vector<vector<Edge>> disjoint_augmenting_paths = {};
-            matching = augment_matching(matching, disjoint_augmenting_paths);
+            matching = augmentMatching(matching, disjoint_augmenting_paths);
         }
     }
 
     return matching;
 }
 
-Matching get_2_approximate_matching(
+Matching get2ApproximateMatching(
     Stream* stream
 ) {
     std::set<int> involved_in_matching = set<int>();
@@ -166,8 +190,8 @@ Matching get_2_approximate_matching(
 
         // 2-approximation within 1 pass, only adds to the matching if both vertices are currently not in the matching.
         if (
-            involved_in_matching.find(edge.first) == involved_in_matching.end()
-            && involved_in_matching.find(edge.second) == involved_in_matching.end()
+            involved_in_matching.find(edge.first) == involved_in_matching.end() &&
+            involved_in_matching.find(edge.second) == involved_in_matching.end()
         ) {
             involved_in_matching.insert(edge.first);
             involved_in_matching.insert(edge.second);
@@ -186,7 +210,7 @@ int main() {
     //Stream* stream = new StreamFromFile("example.txt");
     Stream* stream = new StreamFromMemory("example.txt");
 
-    Matching matching = get_2_approximate_matching(stream);
+    Matching matching = get2ApproximateMatching(stream);
 
     std::cout << "Matching size: " << matching.size() << std::endl;
 
