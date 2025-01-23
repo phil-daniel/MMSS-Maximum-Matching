@@ -70,9 +70,26 @@ vector<vector<Edge>> augment(
 
     // TODO: Add check here to ensure augmentation only happens at the correct point
 
-    vector<Edge> augmenting_path = {};
-    // TODO: Create the augmenting path
+    // Creating the augmenting path
+    vector<Edge> augmenting_path = {unmatched_arc};
+    GraphNode* graph_node_of_u;
+    GraphNode* graph_node_of_v;
+    vector<Edge> root_of_u_to_u = {};
+    vector<Edge> v_to_root_of_v = {};
 
+    if (struct_of_u != nullptr) {
+        graph_node_of_u = struct_of_u->getGraphNodeFromVertex(unmatched_arc.first);
+        root_of_u_to_u = getLeafToRootPath(graph_node_of_u);
+        reverse(root_of_u_to_u.begin(), root_of_u_to_u.end());
+    }
+    if (struct_of_v != nullptr) {
+        graph_node_of_v = struct_of_v->getGraphNodeFromVertex(unmatched_arc.second);
+        v_to_root_of_v = getLeafToRootPath(graph_node_of_v);
+    }
+
+    // Do we actually have to order the augmenting path? Doesn't necessarily seem needed.
+    augmenting_path.insert(augmenting_path.begin(), root_of_u_to_u.begin(), root_of_u_to_u.end());
+    augmenting_path.insert(augmenting_path.end(), v_to_root_of_v.begin(), v_to_root_of_v.end());
 
     // TODO: Need to remove vertices
 
