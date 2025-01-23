@@ -10,6 +10,8 @@
 #include "Stream/StreamFromMemory.h"
 
 #include "Structures/FreeNodeStructure.h"
+#include "Structures/GraphStructure/GraphBlossom.h"
+#include "Structures/GraphStructure/GraphVertex.h"
 
 using namespace std;
 
@@ -17,6 +19,66 @@ typedef int Vertex;
 typedef pair<Vertex, Vertex> Edge;
 typedef set<Edge> Matching;
 typedef unordered_map<Edge, int, boost::hash<Edge>> MatchingToLabel;
+
+vector<Edge> getLeafToRootPath(GraphNode* leaf) {
+    vector<Edge> path = {};
+    GraphNode* current = leaf;
+    GraphNode* parent = leaf->parent;
+
+    while (parent != nullptr) {
+        int current_value, parent_value;
+
+        if (! current->isBlossom) {
+            GraphVertex* vertex_pointer = dynamic_cast<GraphVertex *>(current);
+            current_value = vertex_pointer->vertex_id;
+        } else {
+            GraphBlossom* blossom_pointer = dynamic_cast<GraphBlossom *>(current);
+            current_value = blossom_pointer->vertexToParent;
+        }
+
+        if (! parent->isBlossom) {
+            GraphVertex* vertex_pointer = dynamic_cast<GraphVertex *>(parent);
+            parent_value = vertex_pointer->vertex_id;
+        } else {
+            GraphBlossom* blossom_pointer = dynamic_cast<GraphBlossom *>(parent);
+            // TODO: Add some error handling here in case not in dictionary?
+            parent_value = blossom_pointer->child_to_blossom_vertex[current_value];
+        }
+
+        path.emplace_back(make_pair(current_value, parent_value));
+
+        current = parent;
+        parent = parent->parent;
+    }
+
+    return path;
+}
+
+vector<vector<Edge>> augment(
+    vector<vector<Edge>> disjoint_augmenting_paths,
+    Edge unmatched_arc,
+    unordered_map<Vertex, FreeNodeStructure*> vertex_to_free_node_struct
+) {
+    FreeNodeStructure* struct_of_u = nullptr;
+    if (vertex_to_free_node_struct.count(unmatched_arc.first) > 0) {
+        struct_of_u = vertex_to_free_node_struct[unmatched_arc.first];
+    }
+    FreeNodeStructure* struct_of_v = nullptr;
+    if (vertex_to_free_node_struct.count(unmatched_arc.first) > 0) {
+        struct_of_v = vertex_to_free_node_struct[unmatched_arc.first];
+    }
+
+    // TODO: Add check here to ensure augmentation only happens at the correct point
+
+    vector<Edge> augmenting_path = {};
+    // TODO: Create the augmenting path
+
+
+    // TODO: Need to remove vertices
+
+
+    return disjoint_augmenting_paths;
+}
 
 void extendActivePath(
     Stream* stream,
@@ -77,7 +139,7 @@ void extendActivePath(
         }
 
         // TODO: CASE 4 OUTER VERTEX
-        if (true) {
+        if (struct_of_u != nullptr && struct_of_u->getGraphNodeFromVertex(edge.first)->isOuterVertex) {
             if (struct_of_u == struct_of_v) {
                 // TODO: CONTRACT();
             } else {

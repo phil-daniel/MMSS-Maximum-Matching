@@ -6,11 +6,16 @@
 using namespace std;
 
 class GraphNode {
+    // Variables
     public:
         GraphNode* parent = nullptr;
         vector<GraphNode*> Children = {};
         bool isBlossom = false;
+        bool isOuterVertex = true;
 
+
+    // Funcations
+    public:
         virtual ~GraphNode(void){};
 };
 
