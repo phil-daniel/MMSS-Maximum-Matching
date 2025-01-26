@@ -20,6 +20,10 @@ typedef pair<Vertex, Vertex> Edge;
 typedef set<Edge> Matching;
 typedef unordered_map<Edge, int, boost::hash<Edge>> MatchingToLabel;
 
+void contractAndAugment() {
+    // TODO: Need to implement
+}
+
 void backtrackStuckStructures(
     vector<FreeNodeStructure>* free_node_structs
 ) {
@@ -27,7 +31,7 @@ void backtrackStuckStructures(
         // If the structure is on hold or has been modified then it isn't stuck and hence doesn't
         // need modifying.
         if (structure->on_hold || structure->modified) {
-            // TODO: Make structure inactive
+            continue;
         }
 
         // Updating the working node to the previous outer vertex (i.e. parent of the parent of the current).
@@ -35,6 +39,7 @@ void backtrackStuckStructures(
         if (new_working_node->parent != nullptr) {
             new_working_node = new_working_node->parent->parent;
         }
+        // TODO: Make structure inactive? This should already be done by setting working node to nullptr
 
         structure->working_vertex = new_working_node;
     }
@@ -127,8 +132,48 @@ void contract(
 }
 
 void overtake(
-    Edge unmatched_arc
+    Edge unmatched_arc, // (u,v)
+    Edge matched_arc, // (v,t)
+    int k,
+    unordered_map<Vertex, FreeNodeStructure*>* vertex_to_free_node_struct
 ) {
+    // TODO: Add input check?
+
+    // TODO: Return failure if not in a struct -> need it to return a nullptr
+    FreeNodeStructure* struct_of_u = (*vertex_to_free_node_struct)[unmatched_arc.first];
+    FreeNodeStructure* struct_of_v = (*vertex_to_free_node_struct)[unmatched_arc.second];
+    FreeNodeStructure* struct_of_t = (*vertex_to_free_node_struct)[matched_arc.second];
+
+    // Case 1: Our matched_arc is not currently in a structure
+    if (struct_of_t == nullptr && struct_of_v == nullptr) {
+        // TODO: Are we creating these graph vertexes in the correct way?
+        GraphVertex vertex_v = GraphVertex(unmatched_arc.second);
+        GraphVertex vertex_t = GraphVertex(matched_arc.second);
+        vertex_v.parent = struct_of_u->working_vertex;
+        vertex_t.parent = &vertex_v;
+        vertex_v.children.emplace_back(&vertex_t);
+        struct_of_u->working_vertex->children.emplace_back(&vertex_v);
+        struct_of_u->working_vertex = &vertex_v;
+
+        struct_of_u->addGraphNodeToVertex(unmatched_arc.second, &vertex_v);
+        struct_of_u->addGraphNodeToVertex(matched_arc.second, &vertex_t);
+
+        (*vertex_to_free_node_struct)[unmatched_arc.second] = struct_of_u;
+        (*vertex_to_free_node_struct)[matched_arc.second] = struct_of_u;
+    }
+
+    // Case 2: ...
+    else {
+        // Case 2.1
+        if (true) {
+            // TODO: Implement
+        }
+        // Case 2.2
+        else {
+            // TODO: Implement
+            // ACTUAL "OVERTAKE"
+        }
+    }
     // TODO: Need to implement
 }
 
@@ -247,7 +292,6 @@ vector<vector<Edge>> algPhase(
         // CONTRACT-AND-AUGMENT()
         backtrackStuckStructures(&free_node_structs);
     }
-
 
     return disjoint_augmenting_paths;
 }

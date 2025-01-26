@@ -9,7 +9,7 @@ class GraphNode {
     // Variables
     public:
         GraphNode* parent = nullptr;
-        vector<GraphNode*> Children = {};
+        vector<GraphNode*> children = {};
         bool isBlossom = false;
         bool isOuterVertex = true;
 

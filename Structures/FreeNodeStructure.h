@@ -20,7 +20,7 @@ class FreeNodeStructure {
     // Functions
     public:
         GraphNode* getGraphNodeFromVertex(int vertex);
-
+        void addGraphNodeToVertex(int vertex, GraphNode* node);
 };
 
 #endif //FREENODESTRUCTURE_H

@@ -8,3 +8,7 @@ GraphNode *FreeNodeStructure::getGraphNodeFromVertex(int vertex) {
 
     return vertex_to_graph_node.at(vertex);
 }
+
+void FreeNodeStructure::addGraphNodeToVertex(int vertex, GraphNode* node) {
+    vertex_to_graph_node.insert({vertex, node});
+}
