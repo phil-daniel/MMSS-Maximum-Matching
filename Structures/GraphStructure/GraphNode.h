@@ -1,7 +1,7 @@
 #ifndef GRAPHNODE_H
 #define GRAPHNODE_H
 
-#include <vector>
+#include <set>
 
 using namespace std;
 
@@ -9,7 +9,7 @@ class GraphNode {
     // Variables
     public:
         GraphNode* parent = nullptr;
-        vector<GraphNode*> children = {};
+        set<GraphNode*> children = {};
         bool isBlossom = false;
         bool isOuterVertex = true;
 

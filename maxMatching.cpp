@@ -146,13 +146,13 @@ void overtake(
 
     // Case 1: Our matched_arc is not currently in a structure
     if (struct_of_t == nullptr && struct_of_v == nullptr) {
-        // TODO: Are we creating these graph vertexes in the correct way?
+        // TODO: Are we creating these graph vertexes in the correct way? I.e. do we need to do "new" and the free.
         GraphVertex vertex_v = GraphVertex(unmatched_arc.second);
         GraphVertex vertex_t = GraphVertex(matched_arc.second);
         vertex_v.parent = struct_of_u->working_vertex;
         vertex_t.parent = &vertex_v;
-        vertex_v.children.emplace_back(&vertex_t);
-        struct_of_u->working_vertex->children.emplace_back(&vertex_v);
+        vertex_v.children.insert(&vertex_t);
+        struct_of_u->working_vertex->children.insert(&vertex_v);
         struct_of_u->working_vertex = &vertex_v;
 
         struct_of_u->addGraphNodeToVertex(unmatched_arc.second, &vertex_v);
@@ -162,19 +162,39 @@ void overtake(
         (*vertex_to_free_node_struct)[matched_arc.second] = struct_of_u;
     }
 
-    // Case 2: ...
+    // Case 2: If our matched_arc is currently in a structure.
     else {
-        // Case 2.1
-        if (true) {
-            // TODO: Implement
+        // Case 2.1: If the matched arc is in the same structure as the vertex u, with the matched arc joining them.
+        // I.e. overtaking within a single structure.
+        if (struct_of_u == struct_of_t) {
+            // TODO: Need nullptr checks?
+            // Here we know struct_of_u == struct_of_v == struct_of_v
+            GraphNode* vertex_u = struct_of_t->getGraphNodeFromVertex(matched_arc.first);
+            GraphNode* vertex_v = struct_of_t->getGraphNodeFromVertex(matched_arc.first);
+            GraphNode* vertex_t = struct_of_t->getGraphNodeFromVertex(matched_arc.first);
+
+            GraphNode* current_parent_of_v = vertex_v->parent;
+            // Removing vertex v from the set of it's parent's children.
+            current_parent_of_v->children.erase(vertex_v);
+            // Updating vertex v to now be parented by vertex u
+            vertex_u->children.insert(vertex_v);
+            vertex_v->parent = vertex_u;
+
+            // Updating the working vertex
+            struct_of_t->working_vertex = vertex_t;
+
+            struct_of_t->modified = true;
+
+            // TODO: Do we need to update length measurements?
+
         }
-        // Case 2.2
+        // Case 2.2: If the matched arc is in a different structure to u, with the unmatched arc (u,v) joining the two structures.
+        // I.e. overtaking between two structures.
         else {
-            // TODO: Implement
-            // ACTUAL "OVERTAKE"
+            GraphNode* vertex_u = struct_of_u->getGraphNodeFromVertex(unmatched_arc.first);
+            //GraphNode* vertex_v =
         }
     }
-    // TODO: Need to implement
 }
 
 
