@@ -8,6 +8,7 @@
 class GraphBlossom : public GraphNode {
     // Variables
     public:
+        vector<GraphNode*> nodesInBlossom;
         unordered_map<int, int> child_to_blossom_vertex;
         int vertexToParent;
 

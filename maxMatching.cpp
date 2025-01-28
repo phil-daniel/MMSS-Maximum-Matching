@@ -20,8 +20,28 @@ typedef pair<Vertex, Vertex> Edge;
 typedef set<Edge> Matching;
 typedef unordered_map<Edge, int, boost::hash<Edge>> MatchingToLabel;
 
-void contractAndAugment() {
+void contractAndAugment(
+    Stream* stream
+) {
     // TODO: Need to implement
+
+    // TODO: Can both of these steps be completed in one pass?
+    // Contraction Step
+    Edge edge = stream->readStream();
+    // edges are only -1 if we have reached the end of the stream.
+    while (edge.first != -1) {
+
+        // Reading next edge
+        edge = stream->readStream();
+    }
+
+    // Contract step
+    // In one pass of the stream, find all of the arcs which connect two outer vertices in the same structure.
+    // For each structure
+        // While there exists a an arc linking, invoke contract on this arc
+
+    // Augment Step
+    // Scanning through the stream, if there is an arc connecting outer vertices of different structures, run augment()
 }
 
 void backtrackStuckStructures(
@@ -129,6 +149,29 @@ void contract(
     FreeNodeStructure* structure
 ) {
     // TODO: Need to implement
+    GraphNode* node_of_u = structure->getGraphNodeFromVertex(unmatched_arc.first);
+    GraphNode* node_of_v = structure->getGraphNodeFromVertex(unmatched_arc.first);
+
+    // TODO: we can improve computing the LCA by doing step by step on each side.
+    // Finding the Lowest Common Ancestor of u and v.
+    // Getting a set of all the nodes on the path from u to the root.
+    set<GraphNode*> u_to_root_path = {};
+    GraphNode* current_pos = node_of_u;
+    while (current_pos != nullptr) {
+        u_to_root_path.insert(current_pos);
+        current_pos = current_pos->parent;
+    }
+
+    current_pos = node_of_v;
+    while (u_to_root_path.find(current_pos) == u_to_root_path.end()) {
+        current_pos = current_pos->parent;
+    }
+
+    // current_pos now holds the LCA of u and v.
+
+    GraphBlossom new_blossom;
+    new_blossom.parent = current_pos->parent;
+
 }
 
 void overtake(
@@ -154,6 +197,9 @@ void overtake(
         vertex_v.children.insert(&vertex_t);
         struct_of_u->working_vertex->children.insert(&vertex_v);
         struct_of_u->working_vertex = &vertex_v;
+        // TODO: Is this the best way of updating the outer/inner
+        vertex_v.isOuterVertex = ! vertex_v.parent->isOuterVertex;
+        vertex_t.isOuterVertex = ! vertex_v.isOuterVertex;
 
         struct_of_u->addGraphNodeToVertex(unmatched_arc.second, &vertex_v);
         struct_of_u->addGraphNodeToVertex(matched_arc.second, &vertex_t);
@@ -204,7 +250,9 @@ void extendActivePath(
     float epsilon,
     vector<FreeNodeStructure> free_node_structs,
     vector<vector<Edge>> disjoint_augmenting_paths,
-    set<Vertex> removed_vertices
+    set<Vertex> removed_vertices,
+    MatchingToLabel matching_to_label,
+    unordered_map<int, Edge> vertexToMatchedEdge
 ) {
 
     unordered_map<Vertex, FreeNodeStructure*> vertex_to_free_node_struct;
@@ -267,7 +315,16 @@ void extendActivePath(
 
         // TODO: CASE 5
         else {
+            // Getting the edge which is the parent to u.
+            Edge matching_using_u = vertexToMatchedEdge[edge.first];
+            int distance_to_u = matching_to_label[matching_using_u];
 
+            Edge matching_using_v = vertexToMatchedEdge[edge.second];
+            int distance_to_v = matching_to_label[matching_using_v];
+
+            if (distance_to_u + 1 < distance_to_v) {
+                // TODO: OVERTAKE();
+            }
         }
 
 
