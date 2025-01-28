@@ -21,7 +21,8 @@ typedef set<Edge> Matching;
 typedef unordered_map<Edge, int, boost::hash<Edge>> MatchingToLabel;
 
 void contractAndAugment(
-    Stream* stream
+    Stream* stream,
+    unordered_map<Vertex, FreeNodeStructure*>* vertex_to_free_node_struct
 ) {
     // TODO: Need to implement
 
@@ -31,17 +32,39 @@ void contractAndAugment(
     // edges are only -1 if we have reached the end of the stream.
     while (edge.first != -1) {
 
+        // TODO: Error handling for nullptr
+        FreeNodeStructure* struct_of_u = vertex_to_free_node_struct->at(edge.first);
+        FreeNodeStructure* struct_of_v = vertex_to_free_node_struct->at(edge.second);
+
+        if (struct_of_u == struct_of_v) {
+            // TODO: CONTRACT();
+        }
+
         // Reading next edge
         edge = stream->readStream();
     }
 
-    // Contract step
-    // In one pass of the stream, find all of the arcs which connect two outer vertices in the same structure.
-    // For each structure
-        // While there exists a an arc linking, invoke contract on this arc
+    // Augmentation Step
+    edge = stream->readStream();
+    // edges are only -1 if we have reached the end of the stream.
+    while (edge.first != -1) {
 
-    // Augment Step
-    // Scanning through the stream, if there is an arc connecting outer vertices of different structures, run augment()
+        // TODO: Error handling for nullptr
+        FreeNodeStructure* struct_of_u = vertex_to_free_node_struct->at(edge.first);
+        FreeNodeStructure* struct_of_v = vertex_to_free_node_struct->at(edge.second);
+
+        if (struct_of_u != struct_of_v) {
+            GraphNode* node_of_u = struct_of_u->getGraphNodeFromVertex(edge.first);
+            GraphNode* node_of_v = struct_of_v->getGraphNodeFromVertex(edge.second);
+
+            if (node_of_u->isOuterVertex && node_of_v->isOuterVertex) {
+                // TODO: AUGMENT();
+            }
+        }
+
+        // Reading next edge
+        edge = stream->readStream();
+    }
 }
 
 void backtrackStuckStructures(
