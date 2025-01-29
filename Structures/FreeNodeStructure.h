@@ -28,7 +28,6 @@ class FreeNodeStructure {
         GraphNode* getGraphNodeFromVertex(int vertex);
         void addGraphNodeToVertex(int vertex, GraphNode* node);
         void removeGraphNodeFromStructure(GraphNode* node);
-        void contract(pair<int, int> unmatched_arc);
         friend std::ostream &operator<<(std::ostream &os, const FreeNodeStructure &structure);
     private:
         void removeBlossomFromStructure(GraphBlossom* blossom);

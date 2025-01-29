@@ -6,7 +6,7 @@ GraphBlossom::GraphBlossom() {
 }
 
 void GraphBlossom::addGraphNodeToBlossom(GraphNode* node) {
-    nodesInBlossom.emplace_back(node);
+    nodesInBlossom.insert(node);
     for (GraphNode* child : node->children) {
         if (child->isBlossom) {
             GraphBlossom* blossom_child = dynamic_cast<GraphBlossom*>(child);

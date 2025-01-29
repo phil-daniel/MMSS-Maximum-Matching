@@ -164,51 +164,6 @@ vector<vector<Edge>> augment(
     return disjoint_augmenting_paths;
 }
 
-// void contract(
-//     Edge unmatched_arc,
-//     FreeNodeStructure* structure
-// ) {
-//     // TODO: Need to implement
-//     GraphNode* node_of_u = structure->getGraphNodeFromVertex(unmatched_arc.first);
-//     GraphNode* node_of_v = structure->getGraphNodeFromVertex(unmatched_arc.first);
-//
-//     // TODO: we can improve computing the LCA by doing step by step on each side.
-//     // Finding the Lowest Common Ancestor of u and v.
-//     // Getting a set of all the nodes on the path from u to the root.
-//     set<GraphNode*> u_to_root_path = {};
-//     GraphNode* current_pos = node_of_u;
-//     while (current_pos != nullptr) {
-//         u_to_root_path.insert(current_pos);
-//         current_pos = current_pos->parent;
-//     }
-//
-//     current_pos = node_of_v;
-//     while (u_to_root_path.find(current_pos) == u_to_root_path.end()) {
-//         current_pos = current_pos->parent;
-//     }
-//
-//     // current_pos now holds the LCA of u and v.
-//     GraphNode* lca = current_pos;
-//     GraphBlossom new_blossom;
-//     new_blossom.parent = current_pos->parent;
-//     // Adding all the relevant nodes into the blossom
-//     new_blossom.nodesInBlossom.emplace_back(current_pos);
-//
-//     current_pos = node_of_v;
-//     while (current_pos != lca) {
-//         new_blossom.nodesInBlossom.emplace_back(current_pos);
-//         current_pos = current_pos->parent;
-//     }
-//
-//     current_pos = node_of_u;
-//     while (current_pos != lca) {
-//         new_blossom.nodesInBlossom.emplace_back(current_pos);
-//         current_pos = current_pos->parent;
-//     }
-//
-//     // TODO: need to sort out linking the children to the blossom
-// }
-
 void overtake(
     Edge unmatched_arc, // (u,v)
     Edge matched_arc, // (v,t)
@@ -487,7 +442,7 @@ Matching get2ApproximateMatching(
     return matching;
 }
 
-void contractionTesting(
+void contract(
     Edge unmatched_arc,
     FreeNodeStructure* structure
 ) {
@@ -505,9 +460,6 @@ void contractionTesting(
         current_pos = current_pos->parent;
     }
 
-    std::cout << "TEST" << std::endl;
-    std::cout << u_to_root_path.size() << std::endl;
-
     current_pos = node_of_v;
     // While path from v_to_root and path from u_to_root are separated
     while (u_to_root_path.find(current_pos) == u_to_root_path.end()) {
@@ -516,19 +468,41 @@ void contractionTesting(
 
     // current_pos now holds the LCA of u and v.
     GraphNode* lca = current_pos;
-
     // TODO: need to ensure deletion
     // TODO: need to link children to blossom
     GraphBlossom* new_blossom = new GraphBlossom();
-    new_blossom->nodesInBlossom.emplace_back(lca);
+    new_blossom->nodesInBlossom.insert(lca);
     current_pos = node_of_v;
     while (current_pos != lca && current_pos != nullptr) {
         new_blossom->addGraphNodeToBlossom(current_pos);
+
+        for (GraphNode* node : current_pos->children) {
+            // If the child node is not in the blossom, we need to add the node as a child of the blossom
+            // We also need to update the parent of the child node.
+            if (new_blossom->nodesInBlossom.find(node) == new_blossom->nodesInBlossom.end()) {
+                new_blossom->children.insert(node);
+                node->parent = new_blossom;
+            }
+        }
+
         current_pos = current_pos->parent;
     }
     current_pos = node_of_u;
     while (current_pos != lca && current_pos != nullptr) {
         new_blossom->addGraphNodeToBlossom(current_pos);
+
+        for (GraphNode* node : current_pos->children) {
+            // If the child node is not in the blossom, we need to add the node as a child of the blossom
+            // We also need to update the parent of the child node.
+            if (new_blossom->nodesInBlossom.find(node) == new_blossom->nodesInBlossom.end()) {
+                new_blossom->children.insert(node);
+                node->parent = new_blossom;
+            }
+        }
+
+        // TODO: need to sort out updating vertex_to_graph_node
+        // maybe hold a set in each blossom of the vertices involved?
+
         current_pos = current_pos->parent;
     }
 
@@ -554,22 +528,16 @@ void testing() {
     GraphVertex h = GraphVertex(7);
     GraphVertex i = GraphVertex(8);
     // GraphVertex j = GraphVertex(9);
-    // a.children.insert(&b);
-    // b.parent = &a;
-    // b.children.insert(&c);
-    // c.parent = &b;
-    // c.children.insert(&d);
-    // d.parent = &c;
 
 
      FreeNodeStructure* structure = new FreeNodeStructure();
 
      GraphBlossom blossom = GraphBlossom();
-     blossom.nodesInBlossom.emplace_back(&a);
-     blossom.nodesInBlossom.emplace_back(&b);
+     blossom.nodesInBlossom.insert(&a);
+     blossom.nodesInBlossom.insert(&b);
      GraphBlossom blossom2 = GraphBlossom();
-     blossom2.nodesInBlossom.emplace_back(&c);
-     blossom.nodesInBlossom.emplace_back(&blossom2);
+     blossom2.nodesInBlossom.insert(&c);
+     blossom.nodesInBlossom.insert(&blossom2);
      blossom.children.insert(&d);
      d.parent = &blossom;
      blossom.children.insert(&e);
@@ -577,9 +545,9 @@ void testing() {
      e.children.insert(&f);
      f.parent = &e;
      GraphBlossom blossom3 = GraphBlossom();
-     blossom3.nodesInBlossom.emplace_back(&g);
-     blossom3.nodesInBlossom.emplace_back(&h);
-     blossom3.nodesInBlossom.emplace_back(&i);
+     blossom3.nodesInBlossom.insert(&g);
+     blossom3.nodesInBlossom.insert(&h);
+     blossom3.nodesInBlossom.insert(&i);
      d.children.insert(&blossom3);
      blossom3.parent = &d;
 
@@ -598,7 +566,7 @@ void testing() {
     structure->addGraphNodeToVertex(8, &blossom3);
 
 
-    contractionTesting(make_pair(5,8), structure);
+    contract(make_pair(3,4), structure);
 
     std::cout << *structure << std::endl;
 
