@@ -83,7 +83,7 @@ void FreeNodeStructure::contract(pair<int, int> unmatched_arc) {
 
 std::ostream &operator<<(std::ostream &os, const FreeNodeStructure &structure) {
     os << "Free Node Structure:\nOn Hold: " << structure.on_hold << "\nModified: " << structure.modified;
-    os << "\nContents:";
+    os << "\nContents as Node(Parent):";
 
     // Does a BFS printing out the contents of each node.
     int blossom_number = 1;
@@ -108,26 +108,31 @@ std::ostream &operator<<(std::ostream &os, const FreeNodeStructure &structure) {
 
     os << "\n\nStructure:";
     blossom_number = 1;
-    curr_level = {structure.free_node_root};
-    while (curr_level.size() > 0) {
-        vector<GraphNode*> new_level;
+    vector<pair<GraphNode*, string>> level = {make_pair(structure.free_node_root, "N/A")};
+    while (level.size() > 0) {
+        vector<pair<GraphNode*, string>> new_level;
 
         os << "\n";
 
-        for (GraphNode* node : curr_level) {
-            if (node->isBlossom) {
-                os << " B" << blossom_number;
+        for (pair<GraphNode*, string> pair : level) {
+            if (pair.first->isBlossom) {
+                string name = "B" + to_string(blossom_number);
+                os << " " << name << "(" << pair.second << ")";
+                for (GraphNode* child : pair.first->children) {
+                    new_level.emplace_back(child, name);
+                }
                 blossom_number++;
             } else {
-                GraphVertex* vertex = dynamic_cast<GraphVertex*>(node);
-                os << " V" << vertex->vertex_id;
+                GraphVertex* vertex = dynamic_cast<GraphVertex*>(pair.first);
+                string name = "V" + to_string(vertex->vertex_id);
+                os << " " << name << "(" << pair.second << ")";
+                for (GraphNode* child : pair.first->children) {
+                    new_level.emplace_back(child, name);
+                }
             }
 
-            for (GraphNode* child : node->children) {
-                new_level.emplace_back(child);
-            }
         }
-        curr_level = new_level;
+        level = new_level;
     }
 
     return os;
