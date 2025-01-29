@@ -505,7 +505,11 @@ void contractionTesting(
         current_pos = current_pos->parent;
     }
 
+    std::cout << "TEST" << std::endl;
+    std::cout << u_to_root_path.size() << std::endl;
+
     current_pos = node_of_v;
+    // While path from v_to_root and path from u_to_root are separated
     while (u_to_root_path.find(current_pos) == u_to_root_path.end()) {
         current_pos = current_pos->parent;
     }
@@ -529,8 +533,13 @@ void contractionTesting(
     }
 
     new_blossom->parent = lca->parent;
-    lca->parent->children.erase(lca);
-    lca->parent->children.insert(new_blossom);
+    // If the parent of the LCA is nullptr, then the LCA is the root and we need to update the root node.
+    if (lca->parent != nullptr) {
+        lca->parent->children.erase(lca);
+        lca->parent->children.insert(new_blossom);
+    } else {
+        structure->free_node_root = new_blossom;
+    }
 
 }
 
@@ -538,12 +547,12 @@ void testing() {
     GraphVertex a = GraphVertex(0);
     GraphVertex b = GraphVertex(1);
     GraphVertex c = GraphVertex(2);
-    // GraphVertex d = GraphVertex(3);
-    // GraphVertex e = GraphVertex(4);
-    // GraphVertex f = GraphVertex(5);
-    // GraphVertex g = GraphVertex(6);
-    // GraphVertex h = GraphVertex(7);
-    // GraphVertex i = GraphVertex(8);
+    GraphVertex d = GraphVertex(3);
+    GraphVertex e = GraphVertex(4);
+    GraphVertex f = GraphVertex(5);
+    GraphVertex g = GraphVertex(6);
+    GraphVertex h = GraphVertex(7);
+    GraphVertex i = GraphVertex(8);
     // GraphVertex j = GraphVertex(9);
     // a.children.insert(&b);
     // b.parent = &a;
@@ -552,17 +561,48 @@ void testing() {
     // c.children.insert(&d);
     // d.parent = &c;
 
-    // FreeNodeStructure* structure = new FreeNodeStructure();
-    // structure->working_vertex = &a;
-    // structure->addGraphNodeToVertex(0, &a);
 
-    GraphBlossom blossom = GraphBlossom();
-    blossom.nodesInBlossom.emplace_back(&a);
-    blossom.nodesInBlossom.emplace_back(&b);
-    GraphBlossom blossom2 = GraphBlossom();
-    blossom2.nodesInBlossom.emplace_back(&c);
-    blossom.nodesInBlossom.emplace_back(&blossom2);
-    std::cout << blossom << std::endl;
+     FreeNodeStructure* structure = new FreeNodeStructure();
+
+     GraphBlossom blossom = GraphBlossom();
+     blossom.nodesInBlossom.emplace_back(&a);
+     blossom.nodesInBlossom.emplace_back(&b);
+     GraphBlossom blossom2 = GraphBlossom();
+     blossom2.nodesInBlossom.emplace_back(&c);
+     blossom.nodesInBlossom.emplace_back(&blossom2);
+     blossom.children.insert(&d);
+     d.parent = &blossom;
+     blossom.children.insert(&e);
+     e.parent = &blossom;
+     e.children.insert(&f);
+     f.parent = &e;
+     GraphBlossom blossom3 = GraphBlossom();
+     blossom3.nodesInBlossom.emplace_back(&g);
+     blossom3.nodesInBlossom.emplace_back(&h);
+     blossom3.nodesInBlossom.emplace_back(&i);
+     d.children.insert(&blossom3);
+     blossom3.parent = &d;
+
+
+     structure->free_node_root = &blossom;
+     std::cout << *structure << std::endl;
+
+    structure->addGraphNodeToVertex(0, &blossom);
+    structure->addGraphNodeToVertex(1, &blossom);
+    structure->addGraphNodeToVertex(2, &blossom);
+    structure->addGraphNodeToVertex(3, &d);
+    structure->addGraphNodeToVertex(4, &e);
+    structure->addGraphNodeToVertex(5, &f);
+    structure->addGraphNodeToVertex(6, &blossom3);
+    structure->addGraphNodeToVertex(7, &blossom3);
+    structure->addGraphNodeToVertex(8, &blossom3);
+
+
+    contractionTesting(make_pair(5,8), structure);
+
+    std::cout << *structure << std::endl;
+
+    delete structure;
 
 }
 
