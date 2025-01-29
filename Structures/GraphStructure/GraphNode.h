@@ -14,7 +14,7 @@ class GraphNode {
         bool isOuterVertex = true;
 
 
-    // Funcations
+    // Functions
     public:
         virtual ~GraphNode(void){};
 };

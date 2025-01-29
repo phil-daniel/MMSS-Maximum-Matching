@@ -24,8 +24,6 @@ void contractAndAugment(
     Stream* stream,
     unordered_map<Vertex, FreeNodeStructure*>* vertex_to_free_node_struct
 ) {
-    // TODO: Need to implement
-
     // TODO: Can both of these steps be completed in one pass?
     // Contraction Step
     Edge edge = stream->readStream();
@@ -68,7 +66,7 @@ void contractAndAugment(
 }
 
 void backtrackStuckStructures(
-    vector<FreeNodeStructure>* free_node_structs
+    vector<FreeNodeStructure *> free_node_structs
 ) {
     for (FreeNodeStructure* structure : free_node_structs) {
         // If the structure is on hold or has been modified then it isn't stuck and hence doesn't
@@ -112,7 +110,7 @@ vector<Edge> getLeafToRootPath(
         } else {
             GraphBlossom* blossom_pointer = dynamic_cast<GraphBlossom *>(parent);
             // TODO: Add some error handling here in case not in dictionary?
-            parent_value = blossom_pointer->child_to_blossom_vertex[current_value];
+            parent_value = blossom_pointer->child_to_blossom_vertex[current];
         }
 
         path.emplace_back(make_pair(current_value, parent_value));
@@ -163,39 +161,53 @@ vector<vector<Edge>> augment(
 
     // TODO: Need to remove vertices
 
-
     return disjoint_augmenting_paths;
 }
 
-void contract(
-    Edge unmatched_arc,
-    FreeNodeStructure* structure
-) {
-    // TODO: Need to implement
-    GraphNode* node_of_u = structure->getGraphNodeFromVertex(unmatched_arc.first);
-    GraphNode* node_of_v = structure->getGraphNodeFromVertex(unmatched_arc.first);
-
-    // TODO: we can improve computing the LCA by doing step by step on each side.
-    // Finding the Lowest Common Ancestor of u and v.
-    // Getting a set of all the nodes on the path from u to the root.
-    set<GraphNode*> u_to_root_path = {};
-    GraphNode* current_pos = node_of_u;
-    while (current_pos != nullptr) {
-        u_to_root_path.insert(current_pos);
-        current_pos = current_pos->parent;
-    }
-
-    current_pos = node_of_v;
-    while (u_to_root_path.find(current_pos) == u_to_root_path.end()) {
-        current_pos = current_pos->parent;
-    }
-
-    // current_pos now holds the LCA of u and v.
-
-    GraphBlossom new_blossom;
-    new_blossom.parent = current_pos->parent;
-
-}
+// void contract(
+//     Edge unmatched_arc,
+//     FreeNodeStructure* structure
+// ) {
+//     // TODO: Need to implement
+//     GraphNode* node_of_u = structure->getGraphNodeFromVertex(unmatched_arc.first);
+//     GraphNode* node_of_v = structure->getGraphNodeFromVertex(unmatched_arc.first);
+//
+//     // TODO: we can improve computing the LCA by doing step by step on each side.
+//     // Finding the Lowest Common Ancestor of u and v.
+//     // Getting a set of all the nodes on the path from u to the root.
+//     set<GraphNode*> u_to_root_path = {};
+//     GraphNode* current_pos = node_of_u;
+//     while (current_pos != nullptr) {
+//         u_to_root_path.insert(current_pos);
+//         current_pos = current_pos->parent;
+//     }
+//
+//     current_pos = node_of_v;
+//     while (u_to_root_path.find(current_pos) == u_to_root_path.end()) {
+//         current_pos = current_pos->parent;
+//     }
+//
+//     // current_pos now holds the LCA of u and v.
+//     GraphNode* lca = current_pos;
+//     GraphBlossom new_blossom;
+//     new_blossom.parent = current_pos->parent;
+//     // Adding all the relevant nodes into the blossom
+//     new_blossom.nodesInBlossom.emplace_back(current_pos);
+//
+//     current_pos = node_of_v;
+//     while (current_pos != lca) {
+//         new_blossom.nodesInBlossom.emplace_back(current_pos);
+//         current_pos = current_pos->parent;
+//     }
+//
+//     current_pos = node_of_u;
+//     while (current_pos != lca) {
+//         new_blossom.nodesInBlossom.emplace_back(current_pos);
+//         current_pos = current_pos->parent;
+//     }
+//
+//     // TODO: need to sort out linking the children to the blossom
+// }
 
 void overtake(
     Edge unmatched_arc, // (u,v)
@@ -261,7 +273,18 @@ void overtake(
         // I.e. overtaking between two structures.
         else {
             GraphNode* vertex_u = struct_of_u->getGraphNodeFromVertex(unmatched_arc.first);
-            //GraphNode* vertex_v =
+            GraphNode* vertex_v = struct_of_v->getGraphNodeFromVertex(unmatched_arc.second);
+
+            GraphNode* parent_of_v_in_struct_v = vertex_v->parent;
+            parent_of_v_in_struct_v->children.erase(vertex_v);
+            // TODO: clean up if blossom structure
+
+            vertex_u->children.insert(vertex_v);
+            // TODO: need to update the vertex_to_children dictionary, can do length measurements at the same time
+            // TODO: also need to check if the working vertex has been changed by the overtake
+
+            // TODO: need to clean up if anything linking
+            // TODO: update length measurements
         }
     }
 }
@@ -390,7 +413,7 @@ vector<vector<Edge>> algPhase(
         // TODO: IMPLEMENT ALGORITHM HERE!
         // EXTEND-ACTIVE-PATH()
         // CONTRACT-AND-AUGMENT()
-        backtrackStuckStructures(&free_node_structs);
+        //backtrackStuckStructures(&free_node_structs);
     }
 
     return disjoint_augmenting_paths;
@@ -464,14 +487,97 @@ Matching get2ApproximateMatching(
     return matching;
 }
 
+void contractionTesting(
+    Edge unmatched_arc,
+    FreeNodeStructure* structure
+) {
+    GraphNode* node_of_u = structure->getGraphNodeFromVertex(unmatched_arc.first);
+    GraphNode* node_of_v = structure->getGraphNodeFromVertex(unmatched_arc.second);
+
+    // TODO: Some kind of validation checking?
+
+    // Finding the Lowest Common Ancestor of u and v.
+    // Getting a set of all the nodes on the path from u to the root.
+    set<GraphNode*> u_to_root_path = {};
+    GraphNode* current_pos = node_of_u;
+    while (current_pos != nullptr) {
+        u_to_root_path.insert(current_pos);
+        current_pos = current_pos->parent;
+    }
+
+    current_pos = node_of_v;
+    while (u_to_root_path.find(current_pos) == u_to_root_path.end()) {
+        current_pos = current_pos->parent;
+    }
+
+    // current_pos now holds the LCA of u and v.
+    GraphNode* lca = current_pos;
+
+    // TODO: need to ensure deletion
+    // TODO: need to link children to blossom
+    GraphBlossom* new_blossom = new GraphBlossom();
+    new_blossom->nodesInBlossom.emplace_back(lca);
+    current_pos = node_of_v;
+    while (current_pos != lca && current_pos != nullptr) {
+        new_blossom->addGraphNodeToBlossom(current_pos);
+        current_pos = current_pos->parent;
+    }
+    current_pos = node_of_u;
+    while (current_pos != lca && current_pos != nullptr) {
+        new_blossom->addGraphNodeToBlossom(current_pos);
+        current_pos = current_pos->parent;
+    }
+
+    new_blossom->parent = lca->parent;
+    lca->parent->children.erase(lca);
+    lca->parent->children.insert(new_blossom);
+
+}
+
+void testing() {
+    GraphVertex a = GraphVertex(0);
+    GraphVertex b = GraphVertex(1);
+    GraphVertex c = GraphVertex(2);
+    // GraphVertex d = GraphVertex(3);
+    // GraphVertex e = GraphVertex(4);
+    // GraphVertex f = GraphVertex(5);
+    // GraphVertex g = GraphVertex(6);
+    // GraphVertex h = GraphVertex(7);
+    // GraphVertex i = GraphVertex(8);
+    // GraphVertex j = GraphVertex(9);
+    // a.children.insert(&b);
+    // b.parent = &a;
+    // b.children.insert(&c);
+    // c.parent = &b;
+    // c.children.insert(&d);
+    // d.parent = &c;
+
+    // FreeNodeStructure* structure = new FreeNodeStructure();
+    // structure->working_vertex = &a;
+    // structure->addGraphNodeToVertex(0, &a);
+
+    GraphBlossom blossom = GraphBlossom();
+    blossom.nodesInBlossom.emplace_back(&a);
+    blossom.nodesInBlossom.emplace_back(&b);
+    GraphBlossom blossom2 = GraphBlossom();
+    blossom2.nodesInBlossom.emplace_back(&c);
+    blossom.nodesInBlossom.emplace_back(&blossom2);
+    std::cout << blossom << std::endl;
+
+}
+
 int main() {
 
     //Stream* stream = new StreamFromFile("example.txt");
     Stream* stream = new StreamFromMemory("example.txt");
 
-    Matching matching = get2ApproximateMatching(stream);
+    //Matching matching = get2ApproximateMatching(stream);
 
-    std::cout << "Matching size: " << matching.size() << std::endl;
+    //std::cout << "Matching size: " << matching.size() << std::endl;
+
+    testing();
+
+    delete stream;
 
     return 0;
 }
