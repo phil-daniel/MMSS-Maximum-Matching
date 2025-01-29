@@ -18,13 +18,13 @@ void GraphBlossom::addGraphNodeToBlossom(GraphNode* node) {
     }
 }
 
-void GraphBlossom::ostreamHelper(std::ostream &os, int depth) const {
+void GraphBlossom::printHelper(std::ostream &os, int depth) const {
     os << string(depth, '\t') << "Blossom:";
     for (GraphNode* node : nodesInBlossom) {
         if (node->isBlossom) {
             GraphBlossom* child_blossom = dynamic_cast<GraphBlossom*>(node);
             os << "\n";
-            child_blossom->ostreamHelper(os, depth+1);
+            child_blossom->printHelper(os, depth+1);
         } else {
             GraphVertex* child_vertex = dynamic_cast<GraphVertex*>(node);
             os << "\n" << string(depth+1, '\t') << *child_vertex;
@@ -32,7 +32,11 @@ void GraphBlossom::ostreamHelper(std::ostream &os, int depth) const {
     }
 }
 
+void GraphBlossom::print(std::ostream& os) const {
+    printHelper(os, 0);
+}
+
 ostream &operator<<(std::ostream &os, const GraphBlossom &blossom) {
-    blossom.ostreamHelper(os, 0);
+    blossom.print(os);
     return os;
 }

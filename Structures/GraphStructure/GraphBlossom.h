@@ -16,7 +16,8 @@ class GraphBlossom : public GraphNode {
 
     // Functions
     private:
-        void ostreamHelper(std::ostream &os, int depth) const;
+        void printHelper(std::ostream &os, int depth) const;
+        void print(std::ostream& os) const override;
     public:
         explicit GraphBlossom();
         void addGraphNodeToBlossom(GraphNode* node);

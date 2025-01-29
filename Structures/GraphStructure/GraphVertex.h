@@ -16,6 +16,8 @@ class GraphVertex : public GraphNode {
         explicit GraphVertex(int vertex_id);
 
     // Functions
+    private:
+        void print(std::ostream& os) const override;
     public:
         friend std::ostream &operator<<(std::ostream &os, const GraphVertex &vertex);
 };
