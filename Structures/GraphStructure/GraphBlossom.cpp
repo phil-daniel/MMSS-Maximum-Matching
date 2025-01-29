@@ -1,5 +1,3 @@
-#include <ostream>
-
 #include "GraphBlossom.h"
 #include "GraphVertex.h"
 

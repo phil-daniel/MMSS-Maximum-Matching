@@ -2,8 +2,10 @@
 #define GRAPHVERTEX_H
 
 #include <vector>
+#include <ostream>
 
 #include "GraphNode.h"
+
 
 using namespace std;
 

@@ -80,3 +80,55 @@ void FreeNodeStructure::contract(pair<int, int> unmatched_arc) {
     lca->parent->children.erase(lca);
     lca->parent->children.insert(new_blossom);
 }
+
+std::ostream &operator<<(std::ostream &os, const FreeNodeStructure &structure) {
+    os << "Free Node Structure:\nOn Hold: " << structure.on_hold << "\nModified: " << structure.modified;
+    os << "\nContents:";
+
+    // Does a BFS printing out the contents of each node.
+    int blossom_number = 1;
+    vector<GraphNode*> curr_level = {structure.free_node_root};
+    while (curr_level.size() > 0) {
+        vector<GraphNode*> new_level;
+        for (GraphNode* node : curr_level) {
+            if (node->isBlossom) {
+                GraphBlossom* blossom = dynamic_cast<GraphBlossom*>(node);
+                os << "\nB" << blossom_number << " " << *blossom;
+                blossom_number++;
+            } else {
+                GraphVertex* vertex = dynamic_cast<GraphVertex*>(node);
+                os << "\n" << *vertex;
+            }
+            for (GraphNode* child : node->children) {
+                new_level.emplace_back(child);
+            }
+        }
+        curr_level = new_level;
+    }
+
+    os << "\n\nStructure:";
+    blossom_number = 1;
+    curr_level = {structure.free_node_root};
+    while (curr_level.size() > 0) {
+        vector<GraphNode*> new_level;
+
+        os << "\n";
+
+        for (GraphNode* node : curr_level) {
+            if (node->isBlossom) {
+                os << " B" << blossom_number;
+                blossom_number++;
+            } else {
+                GraphVertex* vertex = dynamic_cast<GraphVertex*>(node);
+                os << " V" << vertex->vertex_id;
+            }
+
+            for (GraphNode* child : node->children) {
+                new_level.emplace_back(child);
+            }
+        }
+        curr_level = new_level;
+    }
+
+    return os;
+}

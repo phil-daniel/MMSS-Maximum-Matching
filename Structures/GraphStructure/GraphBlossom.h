@@ -2,6 +2,7 @@
 #define GRAPHBLOSSOM_H
 
 #include <unordered_map>
+#include <ostream>
 
 #include "GraphNode.h"
 
