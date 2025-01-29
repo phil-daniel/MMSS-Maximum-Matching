@@ -3,6 +3,8 @@
 
 #include <set>
 
+#include "../../types.h"
+
 using namespace std;
 
 class GraphNode {
@@ -12,6 +14,7 @@ class GraphNode {
         set<GraphNode*> children = {};
         bool isBlossom = false;
         bool isOuterVertex = true;
+        Vertex vertex_id; // For blossoms, this value holds the "root" of the blossom
 
 
     // Functions

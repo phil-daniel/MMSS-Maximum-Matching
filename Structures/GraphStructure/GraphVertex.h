@@ -12,13 +12,13 @@ using namespace std;
 class GraphVertex : public GraphNode {
     // Variables
     public:
-        int vertex_id;
-        explicit GraphVertex(int vertex_id);
+
 
     // Functions
     private:
         void print(std::ostream& os) const override;
     public:
+        explicit GraphVertex(Vertex vertex_id);
         friend std::ostream &operator<<(std::ostream &os, const GraphVertex &vertex);
 };
 

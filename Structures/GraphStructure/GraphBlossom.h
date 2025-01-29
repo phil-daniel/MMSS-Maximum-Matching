@@ -10,8 +10,8 @@ class GraphBlossom : public GraphNode {
     // Variables
     public:
         set<GraphNode*> nodesInBlossom;
-        unordered_map<GraphNode*, int> child_to_blossom_vertex;
-        int vertexToParent;
+        set<Vertex> verticesInBlossom;
+        unordered_map<GraphNode*, Vertex> child_to_blossom_vertex;
 
 
     // Functions

@@ -38,6 +38,83 @@ void FreeNodeStructure::removeBlossomFromStructure(GraphBlossom* blossom) {
     }
 }
 
+void FreeNodeStructure::contract(
+    Edge unmatched_arc
+) {
+    GraphNode* node_of_u = getGraphNodeFromVertex(unmatched_arc.first);
+    GraphNode* node_of_v = getGraphNodeFromVertex(unmatched_arc.second);
+
+    // TODO: Some kind of validation checking?
+
+    // Finding the Lowest Common Ancestor of u and v.
+    // Getting a set of all the nodes on the path from u to the root.
+    set<GraphNode*> u_to_root_path = {};
+    GraphNode* current_pos = node_of_u;
+    while (current_pos != nullptr) {
+        u_to_root_path.insert(current_pos);
+        current_pos = current_pos->parent;
+    }
+
+    current_pos = node_of_v;
+    // While path from v_to_root and path from u_to_root are separated
+    while (u_to_root_path.find(current_pos) == u_to_root_path.end()) {
+        current_pos = current_pos->parent;
+    }
+
+    // current_pos now holds the LCA of u and v.
+    GraphNode* lca = current_pos;
+    // TODO: need to ensure deletion
+    // TODO: need to link children to blossom
+    GraphBlossom* new_blossom = new GraphBlossom();
+    new_blossom->nodesInBlossom.insert(lca);
+    current_pos = node_of_v;
+    while (current_pos != lca && current_pos != nullptr) {
+        new_blossom->addGraphNodeToBlossom(current_pos);
+
+        for (GraphNode* node : current_pos->children) {
+            // If the child node is not in the blossom, we need to add the node as a child of the blossom
+            // We also need to update the parent of the child node.
+            if (new_blossom->nodesInBlossom.find(node) == new_blossom->nodesInBlossom.end()) {
+                new_blossom->children.insert(node);
+                node->parent = new_blossom;
+            }
+        }
+
+        current_pos = current_pos->parent;
+    }
+    current_pos = node_of_u;
+    while (current_pos != lca && current_pos != nullptr) {
+        new_blossom->addGraphNodeToBlossom(current_pos);
+
+        for (GraphNode* node : current_pos->children) {
+            // If the child node is not in the blossom, we need to add the node as a child of the blossom
+            // We also need to update the parent of the child node.
+            if (new_blossom->nodesInBlossom.find(node) == new_blossom->nodesInBlossom.end()) {
+                new_blossom->children.insert(node);
+                node->parent = new_blossom;
+            }
+        }
+
+        current_pos = current_pos->parent;
+    }
+
+    new_blossom->parent = lca->parent;
+    // If the parent of the LCA is nullptr, then the LCA is the root and we need to update the root node.
+    if (lca->parent != nullptr) {
+        lca->parent->children.erase(lca);
+        lca->parent->children.insert(new_blossom);
+    } else {
+        free_node_root = new_blossom;
+    }
+
+    new_blossom->vertex_id = lca->vertex_id;
+
+    // Updating vertex_to_graph_node to link all of the vertices in the blossom to the new GraphBlossom structure.
+    for (Vertex vertex_id : new_blossom->verticesInBlossom) {
+        vertex_to_graph_node[vertex_id] = new_blossom;
+    }
+}
+
 std::ostream &operator<<(std::ostream &os, const FreeNodeStructure &structure) {
     os << "Free Node Structure:\nOn Hold: " << structure.on_hold << "\nModified: " << structure.modified;
     os << "\nContents:";

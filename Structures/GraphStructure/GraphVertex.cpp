@@ -1,6 +1,6 @@
 #include "GraphVertex.h"
 
-GraphVertex::GraphVertex(int vertex_id) {
+GraphVertex::GraphVertex(Vertex vertex_id) {
     isBlossom = false;
     this->vertex_id = vertex_id;
 }

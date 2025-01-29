@@ -8,26 +8,28 @@
 #include "GraphStructure/GraphVertex.h"
 #include "GraphStructure/GraphBlossom.h"
 
+#include "../types.h"
+
 
 using namespace std;
 
 class FreeNodeStructure {
     // Variables
     public:
-        // TODO: ADD FREE NODE?
         bool on_hold = false;
         bool modified = false;
         int vertices_count = 0;
         GraphNode* working_vertex;
         GraphNode* free_node_root;
     private:
-        unordered_map<int, GraphNode*> vertex_to_graph_node;
+        unordered_map<Vertex, GraphNode*> vertex_to_graph_node;
 
     // Functions
     public:
-        GraphNode* getGraphNodeFromVertex(int vertex);
-        void addGraphNodeToVertex(int vertex, GraphNode* node);
+        GraphNode* getGraphNodeFromVertex(Vertex vertex);
+        void addGraphNodeToVertex(Vertex vertex, GraphNode* node);
         void removeGraphNodeFromStructure(GraphNode* node);
+        void contract(Edge unmatched_arc);
         friend std::ostream &operator<<(std::ostream &os, const FreeNodeStructure &structure);
     private:
         void removeBlossomFromStructure(GraphBlossom* blossom);

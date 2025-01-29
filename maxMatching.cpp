@@ -2,8 +2,7 @@
 #include <iostream>
 #include <set>
 
-// Required for hashing pairs
-#include <boost/container_hash/hash.hpp>
+#include "types.h"
 
 #include "Stream/Stream.h"
 #include "Stream/StreamFromFile.h"
@@ -14,11 +13,6 @@
 #include "Structures/GraphStructure/GraphVertex.h"
 
 using namespace std;
-
-typedef int Vertex;
-typedef pair<Vertex, Vertex> Edge;
-typedef set<Edge> Matching;
-typedef unordered_map<Edge, int, boost::hash<Edge>> MatchingToLabel;
 
 void contractAndAugment(
     Stream* stream,
@@ -69,6 +63,7 @@ void backtrackStuckStructures(
     vector<FreeNodeStructure *> free_node_structs
 ) {
     for (FreeNodeStructure* structure : free_node_structs) {
+        // TODO: Can this be moved into FreeNodeStructure?
         // If the structure is on hold or has been modified then it isn't stuck and hence doesn't
         // need modifying.
         if (structure->on_hold || structure->modified) {
@@ -96,13 +91,7 @@ vector<Edge> getLeafToRootPath(
     while (parent != nullptr) {
         int current_value, parent_value;
 
-        if (! current->isBlossom) {
-            GraphVertex* vertex_pointer = dynamic_cast<GraphVertex *>(current);
-            current_value = vertex_pointer->vertex_id;
-        } else {
-            GraphBlossom* blossom_pointer = dynamic_cast<GraphBlossom *>(current);
-            current_value = blossom_pointer->vertexToParent;
-        }
+        current_value = current->vertex_id;
 
         if (! parent->isBlossom) {
             GraphVertex* vertex_pointer = dynamic_cast<GraphVertex *>(parent);
@@ -442,81 +431,6 @@ Matching get2ApproximateMatching(
     return matching;
 }
 
-void contract(
-    Edge unmatched_arc,
-    FreeNodeStructure* structure
-) {
-    GraphNode* node_of_u = structure->getGraphNodeFromVertex(unmatched_arc.first);
-    GraphNode* node_of_v = structure->getGraphNodeFromVertex(unmatched_arc.second);
-
-    // TODO: Some kind of validation checking?
-
-    // Finding the Lowest Common Ancestor of u and v.
-    // Getting a set of all the nodes on the path from u to the root.
-    set<GraphNode*> u_to_root_path = {};
-    GraphNode* current_pos = node_of_u;
-    while (current_pos != nullptr) {
-        u_to_root_path.insert(current_pos);
-        current_pos = current_pos->parent;
-    }
-
-    current_pos = node_of_v;
-    // While path from v_to_root and path from u_to_root are separated
-    while (u_to_root_path.find(current_pos) == u_to_root_path.end()) {
-        current_pos = current_pos->parent;
-    }
-
-    // current_pos now holds the LCA of u and v.
-    GraphNode* lca = current_pos;
-    // TODO: need to ensure deletion
-    // TODO: need to link children to blossom
-    GraphBlossom* new_blossom = new GraphBlossom();
-    new_blossom->nodesInBlossom.insert(lca);
-    current_pos = node_of_v;
-    while (current_pos != lca && current_pos != nullptr) {
-        new_blossom->addGraphNodeToBlossom(current_pos);
-
-        for (GraphNode* node : current_pos->children) {
-            // If the child node is not in the blossom, we need to add the node as a child of the blossom
-            // We also need to update the parent of the child node.
-            if (new_blossom->nodesInBlossom.find(node) == new_blossom->nodesInBlossom.end()) {
-                new_blossom->children.insert(node);
-                node->parent = new_blossom;
-            }
-        }
-
-        current_pos = current_pos->parent;
-    }
-    current_pos = node_of_u;
-    while (current_pos != lca && current_pos != nullptr) {
-        new_blossom->addGraphNodeToBlossom(current_pos);
-
-        for (GraphNode* node : current_pos->children) {
-            // If the child node is not in the blossom, we need to add the node as a child of the blossom
-            // We also need to update the parent of the child node.
-            if (new_blossom->nodesInBlossom.find(node) == new_blossom->nodesInBlossom.end()) {
-                new_blossom->children.insert(node);
-                node->parent = new_blossom;
-            }
-        }
-
-        // TODO: need to sort out updating vertex_to_graph_node
-        // maybe hold a set in each blossom of the vertices involved?
-
-        current_pos = current_pos->parent;
-    }
-
-    new_blossom->parent = lca->parent;
-    // If the parent of the LCA is nullptr, then the LCA is the root and we need to update the root node.
-    if (lca->parent != nullptr) {
-        lca->parent->children.erase(lca);
-        lca->parent->children.insert(new_blossom);
-    } else {
-        structure->free_node_root = new_blossom;
-    }
-
-}
-
 void testing() {
     GraphVertex a = GraphVertex(0);
     GraphVertex b = GraphVertex(1);
@@ -566,7 +480,7 @@ void testing() {
     structure->addGraphNodeToVertex(8, &blossom3);
 
 
-    contract(make_pair(3,4), structure);
+    structure->contract(make_pair(3,4));
 
     std::cout << *structure << std::endl;
 
