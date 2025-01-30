@@ -1,5 +1,7 @@
 #include "FreeNodeStructure.h"
 
+#include <iostream>
+
 GraphNode *FreeNodeStructure::getGraphNodeFromVertex(int vertex) {
     // If the vertex is not stored here return a null pointer
     if (vertex_to_graph_node.count(vertex) == 0) {
@@ -96,6 +98,13 @@ void FreeNodeStructure::contract(
     for (Vertex vertex_id : new_blossom->verticesInBlossom) {
         vertex_to_graph_node[vertex_id] = new_blossom;
     }
+
+    // Settings whether this node is an inner or outer node.
+    if (new_blossom->parent == nullptr) {
+        new_blossom->isOuterVertex = true;
+    } else {
+        new_blossom->isOuterVertex = ! new_blossom->parent->isOuterVertex;
+    }
 }
 
 std::ostream &operator<<(std::ostream &os, const FreeNodeStructure &structure) {
@@ -129,12 +138,17 @@ std::ostream &operator<<(std::ostream &os, const FreeNodeStructure &structure) {
         os << "\n";
         for (pair<GraphNode*, string> pair : level) {
             string name;
+
+            // Adding a label for the working node.
+            if (pair.first == structure.working_node) {
+                name = "W-";
+            }
             if (pair.first->isBlossom) {
-                name = "B" + to_string(blossom_number);
+                name += "B" + to_string(blossom_number);
                 blossom_number++;
             } else {
                 GraphVertex* vertex = dynamic_cast<GraphVertex*>(pair.first);
-                name = "V" + to_string(vertex->vertex_id);
+                name += "V" + to_string(vertex->vertex_id);
             }
             os << " " << name << "(" << pair.second << ")";
             for (GraphNode* child : pair.first->children) {
