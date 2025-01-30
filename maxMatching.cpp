@@ -14,73 +14,6 @@
 
 using namespace std;
 
-void contractAndAugment(
-    Stream* stream,
-    unordered_map<Vertex, FreeNodeStructure*>* vertex_to_free_node_struct
-) {
-    // TODO: Can both of these steps be completed in one pass?
-    // Contraction Step
-    Edge edge = stream->readStream();
-    // edges are only -1 if we have reached the end of the stream.
-    while (edge.first != -1) {
-
-        // TODO: Error handling for nullptr
-        FreeNodeStructure* struct_of_u = vertex_to_free_node_struct->at(edge.first);
-        FreeNodeStructure* struct_of_v = vertex_to_free_node_struct->at(edge.second);
-
-        if (struct_of_u == struct_of_v) {
-            // TODO: CONTRACT();
-        }
-
-        // Reading next edge
-        edge = stream->readStream();
-    }
-
-    // Augmentation Step
-    edge = stream->readStream();
-    // edges are only -1 if we have reached the end of the stream.
-    while (edge.first != -1) {
-
-        // TODO: Error handling for nullptr
-        FreeNodeStructure* struct_of_u = vertex_to_free_node_struct->at(edge.first);
-        FreeNodeStructure* struct_of_v = vertex_to_free_node_struct->at(edge.second);
-
-        if (struct_of_u != struct_of_v) {
-            GraphNode* node_of_u = struct_of_u->getGraphNodeFromVertex(edge.first);
-            GraphNode* node_of_v = struct_of_v->getGraphNodeFromVertex(edge.second);
-
-            if (node_of_u->isOuterVertex && node_of_v->isOuterVertex) {
-                // TODO: AUGMENT();
-            }
-        }
-
-        // Reading next edge
-        edge = stream->readStream();
-    }
-}
-
-void backtrackStuckStructures(
-    vector<FreeNodeStructure *> free_node_structs
-) {
-    for (FreeNodeStructure* structure : free_node_structs) {
-        // TODO: Can this be moved into FreeNodeStructure?
-        // If the structure is on hold or has been modified then it isn't stuck and hence doesn't
-        // need modifying.
-        if (structure->on_hold || structure->modified) {
-            continue;
-        }
-
-        // Updating the working node to the previous outer vertex (i.e. parent of the parent of the current).
-        GraphNode* new_working_node = structure->working_node;
-        if (new_working_node->parent != nullptr) {
-            new_working_node = new_working_node->parent->parent;
-        }
-        // TODO: Make structure inactive? This should already be done by setting working node to nullptr
-
-        structure->working_node = new_working_node;
-    }
-}
-
 vector<Edge> getLeafToRootPath(
     GraphNode* leaf
 ) {
@@ -111,18 +44,18 @@ vector<Edge> getLeafToRootPath(
     return path;
 }
 
-vector<vector<Edge>> augment(
-    vector<vector<Edge>> disjoint_augmenting_paths,
+void augment(
+    vector<vector<Edge>>* disjoint_augmenting_paths,
     Edge unmatched_arc,
-    unordered_map<Vertex, FreeNodeStructure*> vertex_to_free_node_struct
+    unordered_map<Vertex, FreeNodeStructure*>* vertex_to_free_node_struct
 ) {
     FreeNodeStructure* struct_of_u = nullptr;
-    if (vertex_to_free_node_struct.count(unmatched_arc.first) > 0) {
-        struct_of_u = vertex_to_free_node_struct[unmatched_arc.first];
+    if (vertex_to_free_node_struct->count(unmatched_arc.first) > 0) {
+        struct_of_u = (*vertex_to_free_node_struct)[unmatched_arc.first];
     }
     FreeNodeStructure* struct_of_v = nullptr;
-    if (vertex_to_free_node_struct.count(unmatched_arc.first) > 0) {
-        struct_of_v = vertex_to_free_node_struct[unmatched_arc.first];
+    if (vertex_to_free_node_struct->count(unmatched_arc.first) > 0) {
+        struct_of_v = (*vertex_to_free_node_struct)[unmatched_arc.first];
     }
 
     // TODO: Add check here to ensure augmentation only happens at the correct point
@@ -150,7 +83,78 @@ vector<vector<Edge>> augment(
 
     // TODO: Need to remove vertices
 
-    return disjoint_augmenting_paths;
+    disjoint_augmenting_paths->emplace_back(augmenting_path);
+}
+
+
+void contractAndAugment(
+    Stream* stream,
+    unordered_map<Vertex, FreeNodeStructure*>* vertex_to_free_node_struct,
+    vector<vector<Edge>>* disjoint_augmenting_paths
+) {
+    // TODO: Can both of these steps be completed in one pass?
+    // TODO: Need to check if matched?
+    // Contraction Step
+    Edge edge = stream->readStream();
+    // edges are only -1 if we have reached the end of the stream.
+    while (edge.first != -1) {
+
+        // TODO: Error handling for nullptr
+        FreeNodeStructure* struct_of_u = vertex_to_free_node_struct->at(edge.first);
+        FreeNodeStructure* struct_of_v = vertex_to_free_node_struct->at(edge.second);
+
+        if (struct_of_u == struct_of_v) {
+            // Contract
+            struct_of_u->contract(edge);
+        }
+
+        // Reading next edge
+        edge = stream->readStream();
+    }
+
+    // Augmentation Step
+    edge = stream->readStream();
+    // edges are only -1 if we have reached the end of the stream.
+    while (edge.first != -1) {
+
+        // TODO: Error handling for nullptr
+        FreeNodeStructure* struct_of_u = vertex_to_free_node_struct->at(edge.first);
+        FreeNodeStructure* struct_of_v = vertex_to_free_node_struct->at(edge.second);
+
+        if (struct_of_u != struct_of_v) {
+            GraphNode* node_of_u = struct_of_u->getGraphNodeFromVertex(edge.first);
+            GraphNode* node_of_v = struct_of_v->getGraphNodeFromVertex(edge.second);
+
+            if (node_of_u->isOuterVertex && node_of_v->isOuterVertex) {
+                augment(disjoint_augmenting_paths, edge, vertex_to_free_node_struct);
+            }
+        }
+
+        // Reading next edge
+        edge = stream->readStream();
+    }
+}
+
+void backtrackStuckStructures(
+    vector<FreeNodeStructure *> free_node_structs
+) {
+    for (FreeNodeStructure* structure : free_node_structs) {
+        // TODO: Can this be moved into FreeNodeStructure?
+        // If the structure is on hold or has been modified then it isn't stuck and hence doesn't
+        // need modifying.
+        if (structure->on_hold || structure->modified) {
+            continue;
+        }
+
+        // Updating the working node to the previous outer vertex (i.e. parent of the parent of the current).
+        GraphNode* new_working_node = structure->working_node;
+        if (new_working_node->parent != nullptr) {
+            new_working_node = new_working_node->parent->parent;
+        }
+        // TODO: Make structure inactive? This should already be done by setting working node to nullptr
+
+        structure->working_node = new_working_node;
+    }
 }
 
 void extendActivePath(
@@ -161,7 +165,7 @@ void extendActivePath(
     vector<vector<Edge>> disjoint_augmenting_paths,
     set<Vertex> removed_vertices,
     MatchingToLabel matching_to_label,
-    unordered_map<int, Edge> vertexToMatchedEdge
+    unordered_map<Vertex, Edge> vertexToMatchedEdge
 ) {
 
     unordered_map<Vertex, FreeNodeStructure*> vertex_to_free_node_struct;
@@ -220,7 +224,7 @@ void extendActivePath(
             if (struct_of_u == struct_of_v) {
                 // TODO: CONTRACT();
             } else {
-                disjoint_augmenting_paths = augment(disjoint_augmenting_paths, edge, vertex_to_free_node_struct);
+                augment(&disjoint_augmenting_paths, edge, vertex_to_free_node_struct);
             }
         }
 
@@ -398,6 +402,8 @@ void overtake(
             GraphNode* vertex_u = struct_of_t->getGraphNodeFromVertex(unmatched_arc.first);
             GraphNode* vertex_v = struct_of_t->getGraphNodeFromVertex(matched_arc.first);
             GraphNode* vertex_t = struct_of_t->getGraphNodeFromVertex(matched_arc.second);
+
+            // TODO: need to sort out blossom overtakes children
 
             GraphNode* current_parent_of_v = vertex_v->parent;
             // Removing vertex v from the set of it's parent's children.
