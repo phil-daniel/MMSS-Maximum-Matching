@@ -20,18 +20,14 @@ void GraphBlossom::addGraphNodeToBlossom(GraphNode* node) {
         verticesInBlossom.insert(node_vertex->vertex_id);
     }
 
-    /*
-    for (GraphNode* child : node->children) {
-        // TODO: Work out why this bit
-        if (child->isBlossom) {
-            GraphBlossom* blossom_child = dynamic_cast<GraphBlossom*>(child);
-            child_to_blossom_vertex[child] = blossom_child->vertexToParent;
-        } else {
-            GraphVertex* vertex_child = dynamic_cast<GraphVertex*>(child);
-            child_to_blossom_vertex[child] = vertex_child->vertex_id;
+    for (GraphNode* child_node : node->children) {
+        // If the child node is not in the blossom, we need to add the node as a child of the blossom
+        // We also need to update the parent of the child node.
+        if (nodesInBlossom.find(child_node) == nodesInBlossom.end()) {
+            children.insert(child_node);
+            child_node->parent = this;
         }
     }
-    */
 }
 
 // Extracts the relevant information from the GraphBlossom to be outputed

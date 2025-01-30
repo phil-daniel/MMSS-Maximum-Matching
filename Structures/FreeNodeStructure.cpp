@@ -71,34 +71,17 @@ void FreeNodeStructure::contract(
     while (current_pos != lca && current_pos != nullptr) {
         new_blossom->addGraphNodeToBlossom(current_pos);
 
-        for (GraphNode* node : current_pos->children) {
-            // If the child node is not in the blossom, we need to add the node as a child of the blossom
-            // We also need to update the parent of the child node.
-            if (new_blossom->nodesInBlossom.find(node) == new_blossom->nodesInBlossom.end()) {
-                new_blossom->children.insert(node);
-                node->parent = new_blossom;
-            }
-        }
-
         current_pos = current_pos->parent;
     }
     current_pos = node_of_u;
     while (current_pos != lca && current_pos != nullptr) {
         new_blossom->addGraphNodeToBlossom(current_pos);
 
-        for (GraphNode* node : current_pos->children) {
-            // If the child node is not in the blossom, we need to add the node as a child of the blossom
-            // We also need to update the parent of the child node.
-            if (new_blossom->nodesInBlossom.find(node) == new_blossom->nodesInBlossom.end()) {
-                new_blossom->children.insert(node);
-                node->parent = new_blossom;
-            }
-        }
-
         current_pos = current_pos->parent;
     }
 
     new_blossom->parent = lca->parent;
+    new_blossom->parent_index = lca->parent_index;
     // If the parent of the LCA is nullptr, then the LCA is the root and we need to update the root node.
     if (lca->parent != nullptr) {
         lca->parent->children.erase(lca);

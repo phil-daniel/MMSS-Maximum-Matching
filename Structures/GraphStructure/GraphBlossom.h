@@ -11,8 +11,6 @@ class GraphBlossom : public GraphNode {
     public:
         set<GraphNode*> nodesInBlossom;
         set<Vertex> verticesInBlossom;
-        unordered_map<GraphNode*, Vertex> child_to_blossom_vertex;
-
 
     // Functions
     private:

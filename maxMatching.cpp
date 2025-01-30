@@ -99,7 +99,7 @@ vector<Edge> getLeafToRootPath(
         } else {
             GraphBlossom* blossom_pointer = dynamic_cast<GraphBlossom *>(parent);
             // TODO: Add some error handling here in case not in dictionary?
-            parent_value = blossom_pointer->child_to_blossom_vertex[current];
+            parent_value = current->parent_index;
         }
 
         path.emplace_back(make_pair(current_value, parent_value));
@@ -441,7 +441,6 @@ void testing() {
     GraphVertex g = GraphVertex(6);
     GraphVertex h = GraphVertex(7);
     GraphVertex i = GraphVertex(8);
-    // GraphVertex j = GraphVertex(9);
 
 
      FreeNodeStructure* structure = new FreeNodeStructure();
