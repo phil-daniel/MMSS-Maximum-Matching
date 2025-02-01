@@ -40,6 +40,10 @@ bool Matching::isInMatching(Edge edge) {
 
 Edge Matching::getMatchedEdgeFromVertex(Vertex vertex) {
     // TODO: not in dict protection?
+    if (vertex_to_matched_edge.find(vertex) == vertex_to_matched_edge.end()) {
+        // If it's not involved in a matching return (-1, -1), i.e. an impossible edge.
+        return make_pair(-1, -1);
+    }
     return vertex_to_matched_edge[vertex];
 }
 

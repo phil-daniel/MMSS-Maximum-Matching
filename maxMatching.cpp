@@ -84,7 +84,6 @@ void contractAndAugment(
     vector<vector<Edge>>* disjoint_augmenting_paths
 ) {
     // TODO: Can both of these steps be completed in one pass?
-    // TODO: Need to check if matched?
     // Contraction Step
     Edge edge = stream->readStream();
     // edges are only -1 if we have reached the end of the stream.
@@ -143,25 +142,125 @@ void backtrackStuckStructures(
         if (new_working_node->parent != nullptr) {
             new_working_node = new_working_node->parent->parent;
         }
+
         // TODO: Make structure inactive? This should already be done by setting working node to nullptr
 
         structure->working_node = new_working_node;
     }
 }
 
+void overtake(
+    Edge unmatched_arc, // (u,v)
+    Edge matched_arc, // (v,t)
+    AvailableFreeNodes* available_free_nodes
+) {
+    // TODO: Add input check?
+    // TODO: How do we know its a matched_arc?
+
+    // TODO: Need to do length measurement updates somewhere?
+
+    FreeNodeStructure* struct_of_u = available_free_nodes->getFreeNodeStructFromVertex(unmatched_arc.first);
+    FreeNodeStructure* struct_of_v = available_free_nodes->getFreeNodeStructFromVertex(unmatched_arc.second);
+    FreeNodeStructure* struct_of_t = available_free_nodes->getFreeNodeStructFromVertex(matched_arc.second);
+
+    // Case 1: Our matched_arc is not currently in a structure
+    if (struct_of_t == nullptr && struct_of_v == nullptr) {
+        GraphVertex vertex_v = GraphVertex(unmatched_arc.second);
+        GraphVertex vertex_t = GraphVertex(matched_arc.second);
+        vertex_v.parent = struct_of_u->working_node;
+        vertex_t.parent = &vertex_v;
+        vertex_v.children.insert(&vertex_t);
+        struct_of_u->working_node->children.insert(&vertex_v);
+        struct_of_u->working_node = &vertex_v;
+
+        vertex_v.isOuterVertex = ! vertex_v.parent->isOuterVertex;
+        vertex_t.isOuterVertex = ! vertex_v.isOuterVertex;
+
+        struct_of_u->addGraphNodeToVertex(unmatched_arc.second, &vertex_v);
+        struct_of_u->addGraphNodeToVertex(matched_arc.second, &vertex_t);
+
+        available_free_nodes->setFreeNodeStructFromVertex(unmatched_arc.second, struct_of_u);
+        available_free_nodes->setFreeNodeStructFromVertex(matched_arc.second, struct_of_u);
+
+    }
+
+    // Case 2: If our matched_arc is currently in a structure.
+    else {
+        // Case 2.1: If the matched arc is in the same structure as the vertex u, with the matched arc joining them.
+        // I.e. overtaking within a single structure.
+        if (struct_of_u == struct_of_t) {
+            // TODO: Need nullptr checks?
+            // Here we know struct_of_u == struct_of_v == struct_of_v
+            GraphNode* vertex_u = struct_of_t->getGraphNodeFromVertex(unmatched_arc.first);
+            GraphNode* vertex_v = struct_of_t->getGraphNodeFromVertex(matched_arc.first);
+            GraphNode* vertex_t = struct_of_t->getGraphNodeFromVertex(matched_arc.second);
+
+            // TODO: need to sort out blossom overtakes children
+
+            GraphNode* current_parent_of_v = vertex_v->parent;
+            // Removing vertex v from the set of it's parent's children.
+            current_parent_of_v->children.erase(vertex_v);
+            // Updating vertex v to now be parented by vertex u
+            vertex_u->children.insert(vertex_v);
+            vertex_v->parent = vertex_u;
+
+            // Updating the working vertex
+            struct_of_t->working_node = vertex_t;
+
+            struct_of_t->modified = true;
+
+            // TODO: Update length measurements?
+
+        }
+        // Case 2.2: If the matched arc is in a different structure to u, with the unmatched arc (u,v) joining the two structures.
+        // I.e. overtaking between two structures.
+        else {
+            GraphNode* vertex_u = struct_of_u->getGraphNodeFromVertex(unmatched_arc.first);
+            GraphNode* vertex_v = struct_of_v->getGraphNodeFromVertex(unmatched_arc.second);
+
+            GraphNode* parent_of_v_in_struct_v = vertex_v->parent;
+            parent_of_v_in_struct_v->children.erase(vertex_v);
+            // TODO: clean up if blossom structure
+
+            vertex_u->children.insert(vertex_v);
+            // TODO: need to update the vertex_to_children dictionary, can do length measurements at the same time
+            // TODO: also need to check if the working vertex has been changed by the overtake
+
+            // TODO: need to clean up if anything linking
+            // TODO: update length measurements
+        }
+    }
+}
+
 void extendActivePath(
     Stream* stream,
     Matching* matching,
-    float epsilon,
     AvailableFreeNodes* available_free_nodes,
     vector<vector<Edge>> disjoint_augmenting_paths,
     set<Vertex> removed_vertices
 ) {
-    // TODO: Need to create new FreeNodeStructures if needed.
-
     Edge edge = stream->readStream();
     // edges are only -1 if we have reached the end of the stream.
     while (edge.first != -1) {
+
+        // Checking whether you need to create a new FreeNodeStructure for these two vertices. Requirements:
+        // - Is the vertex not involved in a matching
+        // - Does the vertex have an existing structure
+        if (
+            matching->getMatchedEdgeFromVertex(edge.first).first == -1 &&
+            available_free_nodes->getFreeNodeStructFromVertex(edge.first) == nullptr
+        ) {
+            GraphVertex* new_vertex_u = new GraphVertex(edge.first);
+            available_free_nodes->createNewStruct(new_vertex_u);
+        }
+        if (
+            matching->getMatchedEdgeFromVertex(edge.second).first == -1 &&
+            available_free_nodes->getFreeNodeStructFromVertex(edge.second) == nullptr
+        ) {
+            GraphVertex* new_vertex_v = new GraphVertex(edge.second);
+            available_free_nodes->createNewStruct(new_vertex_v);
+        }
+
         // Case 1 - If we have "removed" one of the vertices from the graph, we skip this edge.
         if (
             removed_vertices.find(edge.first) != removed_vertices.end() ||
@@ -171,13 +270,10 @@ void extendActivePath(
             continue;
         }
 
-        // Case 2: If vertex1 is in the same structure as vertex2, vertex1 isn't a working vertex
+        // Case 2: If blossom1 is in the same node as blossom2, vertex1 isn't a working vertex
         // or the edge is already matched, we skip this edge.
         FreeNodeStructure* struct_of_u = available_free_nodes->getFreeNodeStructFromVertex(edge.first);
         FreeNodeStructure* struct_of_v = available_free_nodes->getFreeNodeStructFromVertex(edge.second);
-
-        // TODO: Double check "struct_of_u->getGraphNodeFromVertex(edge.first) == struct_of_v->getGraphNodeFromVertex(edge.second)"
-
         if (
             (
                 struct_of_u != nullptr && struct_of_v != nullptr &&
@@ -202,7 +298,7 @@ void extendActivePath(
             continue;
         }
 
-        // TODO: CASE 4 OUTER VERTEX
+        // Case 4: If blossom of u is an outer vertex we contract it.
         if (struct_of_u != nullptr && struct_of_u->getGraphNodeFromVertex(edge.first)->isOuterVertex) {
             if (struct_of_u == struct_of_v) {
                 struct_of_u->contract(edge);
@@ -211,7 +307,7 @@ void extendActivePath(
             }
         }
 
-        // TODO: CASE 5 - add if case
+        // Case 5: Otherwise we attempt to overtake and add the matched edge to the structure.
         else {
             // Getting the edge which is the parent to u.
             Edge matching_using_u = matching->getMatchedEdgeFromVertex(edge.first);
@@ -221,7 +317,7 @@ void extendActivePath(
             int distance_to_v = matching->getLabelFromMatchedEdge(matching_using_v);
 
             if (distance_to_u + 1 < distance_to_v) {
-                // TODO: OVERTAKE();
+                overtake(edge, matching_using_v, available_free_nodes);
             }
         }
 
@@ -311,89 +407,6 @@ Matching algorithm(
     }
 
     return matching;
-}
-
-void overtake(
-    Edge unmatched_arc, // (u,v)
-    Edge matched_arc, // (v,t)
-    AvailableFreeNodes* available_free_nodes
-) {
-    // TODO: Add input check?
-    // TODO: How do we know its a matched_arc?
-
-    // TODO: Need to do length measurement updates somewhere?
-
-    FreeNodeStructure* struct_of_u = available_free_nodes->getFreeNodeStructFromVertex(unmatched_arc.first);
-    FreeNodeStructure* struct_of_v = available_free_nodes->getFreeNodeStructFromVertex(unmatched_arc.second);
-    FreeNodeStructure* struct_of_t = available_free_nodes->getFreeNodeStructFromVertex(matched_arc.second);
-
-    // Case 1: Our matched_arc is not currently in a structure
-    if (struct_of_t == nullptr && struct_of_v == nullptr) {
-        GraphVertex vertex_v = GraphVertex(unmatched_arc.second);
-        GraphVertex vertex_t = GraphVertex(matched_arc.second);
-        vertex_v.parent = struct_of_u->working_node;
-        vertex_t.parent = &vertex_v;
-        vertex_v.children.insert(&vertex_t);
-        struct_of_u->working_node->children.insert(&vertex_v);
-        struct_of_u->working_node = &vertex_v;
-
-        vertex_v.isOuterVertex = ! vertex_v.parent->isOuterVertex;
-        vertex_t.isOuterVertex = ! vertex_v.isOuterVertex;
-
-        struct_of_u->addGraphNodeToVertex(unmatched_arc.second, &vertex_v);
-        struct_of_u->addGraphNodeToVertex(matched_arc.second, &vertex_t);
-
-        available_free_nodes->setFreeNodeStructFromVertex(unmatched_arc.second, struct_of_u);
-        available_free_nodes->setFreeNodeStructFromVertex(matched_arc.second, struct_of_u);
-
-    }
-
-    // Case 2: If our matched_arc is currently in a structure.
-    else {
-        // Case 2.1: If the matched arc is in the same structure as the vertex u, with the matched arc joining them.
-        // I.e. overtaking within a single structure.
-        if (struct_of_u == struct_of_t) {
-            // TODO: Need nullptr checks?
-            // Here we know struct_of_u == struct_of_v == struct_of_v
-            GraphNode* vertex_u = struct_of_t->getGraphNodeFromVertex(unmatched_arc.first);
-            GraphNode* vertex_v = struct_of_t->getGraphNodeFromVertex(matched_arc.first);
-            GraphNode* vertex_t = struct_of_t->getGraphNodeFromVertex(matched_arc.second);
-
-            // TODO: need to sort out blossom overtakes children
-
-            GraphNode* current_parent_of_v = vertex_v->parent;
-            // Removing vertex v from the set of it's parent's children.
-            current_parent_of_v->children.erase(vertex_v);
-            // Updating vertex v to now be parented by vertex u
-            vertex_u->children.insert(vertex_v);
-            vertex_v->parent = vertex_u;
-
-            // Updating the working vertex
-            struct_of_t->working_node = vertex_t;
-
-            struct_of_t->modified = true;
-
-            // TODO: Update length measurements?
-
-        }
-        // Case 2.2: If the matched arc is in a different structure to u, with the unmatched arc (u,v) joining the two structures.
-        // I.e. overtaking between two structures.
-        else {
-            GraphNode* vertex_u = struct_of_u->getGraphNodeFromVertex(unmatched_arc.first);
-            GraphNode* vertex_v = struct_of_v->getGraphNodeFromVertex(unmatched_arc.second);
-
-            GraphNode* parent_of_v_in_struct_v = vertex_v->parent;
-            parent_of_v_in_struct_v->children.erase(vertex_v);
-            // TODO: clean up if blossom structure
-
-            vertex_u->children.insert(vertex_v);
-            // TODO: need to update the vertex_to_children dictionary, can do length measurements at the same time
-            // TODO: also need to check if the working vertex has been changed by the overtake
-
-            // TODO: need to clean up if anything linking
-            // TODO: update length measurements
-        }
-    }
 }
 
 void testing() {
