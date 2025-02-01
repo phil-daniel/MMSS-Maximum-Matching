@@ -9,7 +9,6 @@ using namespace std;
 
 typedef int Vertex;
 typedef pair<Vertex, Vertex> Edge;
-typedef set<Edge> Matching;
 typedef unordered_map<Edge, int, boost::hash<Edge>> MatchingToLabel;
 
 #endif //TYPES_H

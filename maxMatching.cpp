@@ -12,6 +12,7 @@
 #include "Structures/FreeNodeStructure.h"
 #include "Structures/GraphStructure/GraphBlossom.h"
 #include "Structures/GraphStructure/GraphVertex.h"
+#include "Structures/Matching.h"
 
 using namespace std;
 
@@ -127,9 +128,9 @@ void contractAndAugment(
 }
 
 void backtrackStuckStructures(
-    AvailableFreeNodes available_free_nodes
+    AvailableFreeNodes* available_free_nodes
 ) {
-    for (FreeNodeStructure* structure : available_free_nodes.free_node_structures) {
+    for (FreeNodeStructure* structure : available_free_nodes->free_node_structures) {
         // TODO: Can this be moved into FreeNodeStructure?
         // If the structure is on hold or has been modified then it isn't stuck and hence doesn't
         // need modifying.
@@ -150,13 +151,11 @@ void backtrackStuckStructures(
 
 void extendActivePath(
     Stream* stream,
-    Matching matching,
+    Matching* matching,
     float epsilon,
     AvailableFreeNodes* available_free_nodes,
     vector<vector<Edge>> disjoint_augmenting_paths,
-    set<Vertex> removed_vertices,
-    MatchingToLabel* matching_to_label,
-    unordered_map<Vertex, Edge> vertexToMatchedEdge
+    set<Vertex> removed_vertices
 ) {
     // TODO: Need to create new FreeNodeStructures if needed.
 
@@ -185,7 +184,7 @@ void extendActivePath(
                 struct_of_u->getGraphNodeFromVertex(edge.first) == struct_of_v->getGraphNodeFromVertex(edge.second)
             ) ||
             (struct_of_u != nullptr && struct_of_u->working_node != struct_of_u->getGraphNodeFromVertex(edge.first)) ||
-            matching.find(edge) != matching.end()
+            matching->isInMatching(edge)
         ) {
             edge = stream->readStream();
             continue;
@@ -217,11 +216,11 @@ void extendActivePath(
         // TODO: CASE 5 - add if case
         else {
             // Getting the edge which is the parent to u.
-            Edge matching_using_u = vertexToMatchedEdge[edge.first];
-            int distance_to_u = (*matching_to_label)[matching_using_u];
+            Edge matching_using_u = matching->getMatchedEdgeFromVertex(edge.first);
+            int distance_to_u = matching->getLabelFromMatchedEdge(matching_using_u);
 
-            Edge matching_using_v = vertexToMatchedEdge[edge.second];
-            int distance_to_v = (*matching_to_label)[matching_using_v];
+            Edge matching_using_v = matching->getMatchedEdgeFromVertex(edge.second);
+            int distance_to_v = matching->getLabelFromMatchedEdge(matching_using_v);
 
             if (distance_to_u + 1 < distance_to_v) {
                 // TODO: OVERTAKE();
@@ -245,17 +244,12 @@ vector<vector<Edge>> algPhase(
 
     set<Vertex> removed_vertices = {};
 
-    MatchingToLabel matching_to_label;
-
     int path_limit = static_cast<int>(6 / scale) + 1;
     int pass_bundles_max = static_cast<int>(72 / (scale * epsilon));
 
     AvailableFreeNodes available_free_nodes = AvailableFreeNodes();
 
-    // Setting the current distance for each matched edge to infinity.
-    for (Edge edge : *matching) {
-        matching_to_label[edge] = numeric_limits<int>::max();
-    }
+    matching->resetLabels();
 
     for (int pass_bundle = 0; pass_bundle < pass_bundles_max; pass_bundle++) {
         for (FreeNodeStructure* free_node_struct : available_free_nodes.free_node_structures) {
@@ -266,9 +260,9 @@ vector<vector<Edge>> algPhase(
         }
 
         // TODO: IMPLEMENT ALGORITHM HERE!
-        // EXTEND-ACTIVE-PATH()
-        // CONTRACT-AND-AUGMENT()
-        //backtrackStuckStructures(&free_node_structs);
+        //extendActivePath(stream, matching, epsilon, &available_free_nodes, disjoint_augmenting_paths, removed_vertices);
+        //contractAndAugment(stream, &available_free_nodes, &disjoint_augmenting_paths);
+        //backtrackStuckStructures(&available_free_nodes);
     }
 
     return disjoint_augmenting_paths;
@@ -279,16 +273,17 @@ Matching augmentMatching(
     vector<vector<Edge>>* disjoint_augmenting_paths
 ) {
     // Takes a vector (list) of disjoint augmenting paths and adds them to the matching.
-    // TODO: need to work out how augmentations work with a blossom.
+
+    // TODO: change to pointer rather than returning
 
     for (vector<Edge> augmenting_path : (*disjoint_augmenting_paths)) {
         for (Edge edge : augmenting_path) {
             // If the edge isn't in the matching, we add it to the matching.
             // Otherwise we remove it from the matching.
-            if (matching.find(edge) == matching.end()) {
-                matching.insert(edge);
+            if (matching.isInMatching(edge)) {
+                matching.removeEdge(edge);
             } else {
-                matching.erase(edge);
+                matching.addEdge(edge);
             }
         }
     }
@@ -313,7 +308,7 @@ Matching get2ApproximateMatching(
         ) {
             involved_in_matching.insert(edge.first);
             involved_in_matching.insert(edge.second);
-            matching.insert(edge);
+            matching.addEdge(edge);
         }
 
         // Reading next edge
@@ -349,21 +344,19 @@ Matching algorithm(
 void overtake(
     Edge unmatched_arc, // (u,v)
     Edge matched_arc, // (v,t)
-    int k,
     AvailableFreeNodes* available_free_nodes
 ) {
     // TODO: Add input check?
+    // TODO: How do we know its a matched_arc?
 
     // TODO: Need to do length measurement updates somewhere?
 
-    // TODO: Return failure if not in a struct -> need it to return a nullptr
     FreeNodeStructure* struct_of_u = available_free_nodes->getFreeNodeStructFromVertex(unmatched_arc.first);
     FreeNodeStructure* struct_of_v = available_free_nodes->getFreeNodeStructFromVertex(unmatched_arc.second);
     FreeNodeStructure* struct_of_t = available_free_nodes->getFreeNodeStructFromVertex(matched_arc.second);
 
     // Case 1: Our matched_arc is not currently in a structure
     if (struct_of_t == nullptr && struct_of_v == nullptr) {
-        // TODO: Are we creating these graph vertexes in the correct way? I.e. do we need to do "new" and the free.
         GraphVertex vertex_v = GraphVertex(unmatched_arc.second);
         GraphVertex vertex_t = GraphVertex(matched_arc.second);
         vertex_v.parent = struct_of_u->working_node;
@@ -371,7 +364,7 @@ void overtake(
         vertex_v.children.insert(&vertex_t);
         struct_of_u->working_node->children.insert(&vertex_v);
         struct_of_u->working_node = &vertex_v;
-        // TODO: Is this the best way of updating the outer/inner
+
         vertex_v.isOuterVertex = ! vertex_v.parent->isOuterVertex;
         vertex_t.isOuterVertex = ! vertex_v.isOuterVertex;
 
@@ -488,7 +481,7 @@ void testing() {
     structure->free_node_root = &zero;
     structure->working_node = &nine;
 
-    overtake(make_pair(4,5), make_pair(5,7), 0, &available_free_nodes);
+    overtake(make_pair(4,5), make_pair(5,7), &available_free_nodes);
 
     std::cout << *structure << std::endl;
 

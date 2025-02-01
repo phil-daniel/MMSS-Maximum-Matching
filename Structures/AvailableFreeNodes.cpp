@@ -19,6 +19,7 @@ FreeNodeStructure* AvailableFreeNodes::createNewStruct(GraphVertex* vertex) {
     new_struct->addGraphNodeToVertex(vertex->vertex_id, vertex);
     new_struct->free_node_root = vertex;
     new_struct->working_node = vertex;
+    vertex->isOuterVertex = true;
 
     free_node_structures.emplace_back(new_struct);
 
@@ -27,7 +28,7 @@ FreeNodeStructure* AvailableFreeNodes::createNewStruct(GraphVertex* vertex) {
     return new_struct;
 }
 
-void AvailableFreeNodes::deleteStructures() {
+void AvailableFreeNodes::deleteStructures() const {
     for (FreeNodeStructure* free_node : free_node_structures) {
         delete free_node;
     }

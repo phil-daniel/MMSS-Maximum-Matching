@@ -20,7 +20,7 @@ class AvailableFreeNodes {
         FreeNodeStructure* getFreeNodeStructFromVertex(Vertex vertex);
         void setFreeNodeStructFromVertex(Vertex vertex, FreeNodeStructure* structure);
         FreeNodeStructure* createNewStruct(GraphVertex* vertex);
-        void deleteStructures();
+        void deleteStructures() const;
 };
 
 #endif //AVAILABLEFREENODES_H
