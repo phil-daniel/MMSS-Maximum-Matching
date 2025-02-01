@@ -47,28 +47,24 @@ void augment(
     Edge unmatched_arc,
     AvailableFreeNodes* available_free_nodes
 ) {
-    // TODO: Should it even be possible to be a nullptr?
-    // TODO: Need to think about how blossoms work in these augmenting paths.
     FreeNodeStructure* struct_of_u = available_free_nodes->getFreeNodeStructFromVertex(unmatched_arc.first);
     FreeNodeStructure* struct_of_v = available_free_nodes->getFreeNodeStructFromVertex(unmatched_arc.second);
 
-    // TODO: Add check here to ensure augmentation only happens at the correct point
-
     // Creating the augmenting path
     vector<Edge> augmenting_path = {unmatched_arc};
-    GraphNode* graph_node_of_u;
-    GraphNode* graph_node_of_v;
     vector<Edge> root_of_u_to_u = {};
     vector<Edge> v_to_root_of_v = {};
 
     if (struct_of_u != nullptr) {
-        graph_node_of_u = struct_of_u->getGraphNodeFromVertex(unmatched_arc.first);
+        GraphNode *graph_node_of_u = struct_of_u->getGraphNodeFromVertex(unmatched_arc.first);
         root_of_u_to_u = getLeafToRootPath(graph_node_of_u);
         reverse(root_of_u_to_u.begin(), root_of_u_to_u.end());
+        struct_of_u->on_hold = true;
     }
     if (struct_of_v != nullptr) {
-        graph_node_of_v = struct_of_v->getGraphNodeFromVertex(unmatched_arc.second);
+        GraphNode *graph_node_of_v = struct_of_v->getGraphNodeFromVertex(unmatched_arc.second);
         v_to_root_of_v = getLeafToRootPath(graph_node_of_v);
+        struct_of_v->on_hold = true;
     }
 
     // TODO: Do we actually have to order the augmenting path? Doesn't necessarily seem needed.
@@ -76,10 +72,6 @@ void augment(
     augmenting_path.insert(augmenting_path.end(), v_to_root_of_v.begin(), v_to_root_of_v.end());
 
     // TODO: Need to remove vertices? - Does making them on hold do the same thing?
-    // nullptr control
-    struct_of_u->on_hold = true;
-    struct_of_v->on_hold = true;
-
 
     disjoint_augmenting_paths->emplace_back(augmenting_path);
 }
@@ -358,16 +350,16 @@ void overtake(
     Edge unmatched_arc, // (u,v)
     Edge matched_arc, // (v,t)
     int k,
-    unordered_map<Vertex, FreeNodeStructure*>* vertex_to_free_node_struct
+    AvailableFreeNodes* available_free_nodes
 ) {
     // TODO: Add input check?
 
     // TODO: Need to do length measurement updates somewhere?
 
     // TODO: Return failure if not in a struct -> need it to return a nullptr
-    FreeNodeStructure* struct_of_u = (*vertex_to_free_node_struct)[unmatched_arc.first];
-    FreeNodeStructure* struct_of_v = (*vertex_to_free_node_struct)[unmatched_arc.second];
-    FreeNodeStructure* struct_of_t = (*vertex_to_free_node_struct)[matched_arc.second];
+    FreeNodeStructure* struct_of_u = available_free_nodes->getFreeNodeStructFromVertex(unmatched_arc.first);
+    FreeNodeStructure* struct_of_v = available_free_nodes->getFreeNodeStructFromVertex(unmatched_arc.second);
+    FreeNodeStructure* struct_of_t = available_free_nodes->getFreeNodeStructFromVertex(matched_arc.second);
 
     // Case 1: Our matched_arc is not currently in a structure
     if (struct_of_t == nullptr && struct_of_v == nullptr) {
@@ -386,8 +378,9 @@ void overtake(
         struct_of_u->addGraphNodeToVertex(unmatched_arc.second, &vertex_v);
         struct_of_u->addGraphNodeToVertex(matched_arc.second, &vertex_t);
 
-        (*vertex_to_free_node_struct)[unmatched_arc.second] = struct_of_u;
-        (*vertex_to_free_node_struct)[matched_arc.second] = struct_of_u;
+        available_free_nodes->setFreeNodeStructFromVertex(unmatched_arc.second, struct_of_u);
+        available_free_nodes->setFreeNodeStructFromVertex(matched_arc.second, struct_of_u);
+
     }
 
     // Case 2: If our matched_arc is currently in a structure.
@@ -410,13 +403,12 @@ void overtake(
             vertex_u->children.insert(vertex_v);
             vertex_v->parent = vertex_u;
 
-            // TODO: Working vertex update doesn't seem to be correct
             // Updating the working vertex
             struct_of_t->working_node = vertex_t;
 
             struct_of_t->modified = true;
 
-            // TODO: Do we need to update length measurements?
+            // TODO: Update length measurements?
 
         }
         // Case 2.2: If the matched arc is in a different structure to u, with the unmatched arc (u,v) joining the two structures.
@@ -470,8 +462,8 @@ void testing() {
     seven.children.insert(&nine);
     nine.parent = &seven;
 
-    FreeNodeStructure* structure = new FreeNodeStructure();
-    structure->addGraphNodeToVertex(0, &zero);
+    AvailableFreeNodes available_free_nodes;
+    FreeNodeStructure* structure = available_free_nodes.createNewStruct(&zero);
     structure->addGraphNodeToVertex(1, &one);
     structure->addGraphNodeToVertex(2, &two);
     structure->addGraphNodeToVertex(3, &three);
@@ -482,22 +474,21 @@ void testing() {
     structure->addGraphNodeToVertex(8, &eight);
     structure->addGraphNodeToVertex(9, &nine);
 
-    unordered_map<Vertex, FreeNodeStructure*> vertex_to_free_node_struct;
-    vertex_to_free_node_struct[0] = structure;
-    vertex_to_free_node_struct[1] = structure;
-    vertex_to_free_node_struct[2] = structure;
-    vertex_to_free_node_struct[3] = structure;
-    vertex_to_free_node_struct[4] = structure;
-    vertex_to_free_node_struct[5] = structure;
-    vertex_to_free_node_struct[6] = structure;
-    vertex_to_free_node_struct[7] = structure;
-    vertex_to_free_node_struct[8] = structure;
-    vertex_to_free_node_struct[9] = structure;
+    available_free_nodes.setFreeNodeStructFromVertex(0, structure);
+    available_free_nodes.setFreeNodeStructFromVertex(1, structure);
+    available_free_nodes.setFreeNodeStructFromVertex(2, structure);
+    available_free_nodes.setFreeNodeStructFromVertex(3, structure);
+    available_free_nodes.setFreeNodeStructFromVertex(4, structure);
+    available_free_nodes.setFreeNodeStructFromVertex(5, structure);
+    available_free_nodes.setFreeNodeStructFromVertex(6, structure);
+    available_free_nodes.setFreeNodeStructFromVertex(7, structure);
+    available_free_nodes.setFreeNodeStructFromVertex(8, structure);
+    available_free_nodes.setFreeNodeStructFromVertex(9, structure);
 
     structure->free_node_root = &zero;
     structure->working_node = &nine;
 
-    overtake(make_pair(4,5), make_pair(5,7), 0, &vertex_to_free_node_struct);
+    overtake(make_pair(4,5), make_pair(5,7), 0, &available_free_nodes);
 
     std::cout << *structure << std::endl;
 

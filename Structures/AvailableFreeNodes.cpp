@@ -8,6 +8,10 @@ FreeNodeStructure* AvailableFreeNodes::getFreeNodeStructFromVertex(Vertex vertex
     return vertex_to_struct[vertex];
 }
 
+void AvailableFreeNodes::setFreeNodeStructFromVertex(Vertex vertex, FreeNodeStructure* structure) {
+    vertex_to_struct[vertex] = structure;
+}
+
 FreeNodeStructure* AvailableFreeNodes::createNewStruct(GraphVertex* vertex) {
     // Making the assumption that we are only going to be creating new structures which with vertices and not blossoms.
     FreeNodeStructure* new_struct = new FreeNodeStructure();

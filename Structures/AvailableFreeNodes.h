@@ -18,6 +18,7 @@ class AvailableFreeNodes {
     // Functions
     public:
         FreeNodeStructure* getFreeNodeStructFromVertex(Vertex vertex);
+        void setFreeNodeStructFromVertex(Vertex vertex, FreeNodeStructure* structure);
         FreeNodeStructure* createNewStruct(GraphVertex* vertex);
         void deleteStructures();
 };
