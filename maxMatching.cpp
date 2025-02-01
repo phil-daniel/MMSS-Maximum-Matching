@@ -191,8 +191,6 @@ void extendActivePath(
         }
 
         // Case 3: If the first vertex is in a "marked" or "on hold" structure, we skip this edge.
-        // TODO: Can this be simplified since we already know the struct.
-        // TODO: nullptr check?
         if (
             struct_of_u != nullptr &&
             (
@@ -207,7 +205,7 @@ void extendActivePath(
         // TODO: CASE 4 OUTER VERTEX
         if (struct_of_u != nullptr && struct_of_u->getGraphNodeFromVertex(edge.first)->isOuterVertex) {
             if (struct_of_u == struct_of_v) {
-                // TODO: CONTRACT();
+                struct_of_u->contract(edge);
             } else {
                 augment(&disjoint_augmenting_paths, edge, available_free_nodes);
             }
@@ -253,8 +251,7 @@ vector<vector<Edge>> algPhase(
 
     for (int pass_bundle = 0; pass_bundle < pass_bundles_max; pass_bundle++) {
         for (FreeNodeStructure* free_node_struct : available_free_nodes.free_node_structures) {
-            if (free_node_struct->vertices_count >= path_limit) free_node_struct->on_hold = true;
-            // TODO: Need to be updating the vertex count
+            if (free_node_struct->vertex_to_graph_node.size() >= path_limit) free_node_struct->on_hold = true;
             else free_node_struct->on_hold = false;
             free_node_struct->modified = false;
         }
@@ -266,29 +263,6 @@ vector<vector<Edge>> algPhase(
     }
 
     return disjoint_augmenting_paths;
-}
-
-Matching augmentMatching(
-    Matching matching,
-    vector<vector<Edge>>* disjoint_augmenting_paths
-) {
-    // Takes a vector (list) of disjoint augmenting paths and adds them to the matching.
-
-    // TODO: change to pointer rather than returning
-
-    for (vector<Edge> augmenting_path : (*disjoint_augmenting_paths)) {
-        for (Edge edge : augmenting_path) {
-            // If the edge isn't in the matching, we add it to the matching.
-            // Otherwise we remove it from the matching.
-            if (matching.isInMatching(edge)) {
-                matching.removeEdge(edge);
-            } else {
-                matching.addEdge(edge);
-            }
-        }
-    }
-
-    return matching;
 }
 
 Matching get2ApproximateMatching(
@@ -328,13 +302,11 @@ Matching algorithm(
     float scale_limit = (epsilon * epsilon) / 64;
 
     for (float scale = 1.f/2.f; scale <= scale_limit; scale *= 1.f/2.f) {
-        float phase_limit = 144 / (scale * epsilon);
+        float phase_limit = 144.f / (scale * epsilon);
 
         for (float phase = 1; phase <= phase_limit; phase++) {
-            vector<vector<Edge>> disjoint_augmenting_paths = {};
-            // TODO: Implement alg phase.
-            algPhase(stream, &matching, epsilon, scale);
-            matching = augmentMatching(matching, &disjoint_augmenting_paths);
+            vector<vector<Edge>> disjoint_augmenting_paths = algPhase(stream, &matching, epsilon, scale);
+            matching.augmentMatching(&disjoint_augmenting_paths);
         }
     }
 
