@@ -8,7 +8,7 @@ class Matching {
     public:
         set<Edge> matched_edges;
         unordered_map<Vertex, Edge> vertex_to_matched_edge;
-        unordered_map<Edge, int> matched_edge_to_label;
+        unordered_map<Edge, int, boost::hash<Edge>> matched_edge_to_label;
 
     // Functions
     public:

@@ -39,7 +39,6 @@ bool Matching::isInMatching(Edge edge) {
 }
 
 Edge Matching::getMatchedEdgeFromVertex(Vertex vertex) {
-    // TODO: not in dict protection?
     if (vertex_to_matched_edge.find(vertex) == vertex_to_matched_edge.end()) {
         // If it's not involved in a matching return (-1, -1), i.e. an impossible edge.
         return make_pair(-1, -1);
@@ -53,6 +52,8 @@ int Matching::getLabelFromMatchedEdge(Edge edge) {
 }
 
 void Matching::resetLabels() {
+    // Emptying the map.
+    matched_edge_to_label.clear();
     // Setting the current distance for each matched edge to infinity.
     for (Edge edge : matched_edges) {
         matched_edge_to_label[edge] = numeric_limits<int>::max();

@@ -30,6 +30,7 @@ FreeNodeStructure* AvailableFreeNodes::createNewStruct(GraphVertex* vertex) {
 
 void AvailableFreeNodes::deleteStructures() const {
     for (FreeNodeStructure* free_node : free_node_structures) {
+        free_node->deleteStructure();
         delete free_node;
     }
 }

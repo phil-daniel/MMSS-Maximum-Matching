@@ -130,22 +130,7 @@ void backtrackStuckStructures(
     AvailableFreeNodes* available_free_nodes
 ) {
     for (FreeNodeStructure* structure : available_free_nodes->free_node_structures) {
-        // TODO: Can this be moved into FreeNodeStructure?
-        // If the structure is on hold or has been modified then it isn't stuck and hence doesn't
-        // need modifying.
-        if (structure->on_hold || structure->modified) {
-            continue;
-        }
-
-        // Updating the working node to the previous outer vertex (i.e. parent of the parent of the current).
-        GraphNode* new_working_node = structure->working_node;
-        if (new_working_node->parent != nullptr) {
-            new_working_node = new_working_node->parent->parent;
-        }
-
-        // TODO: Make structure inactive? This should already be done by setting working node to nullptr
-
-        structure->working_node = new_working_node;
+        structure->backtrack();
     }
 }
 
@@ -352,10 +337,9 @@ vector<vector<Edge>> algPhase(
             free_node_struct->modified = false;
         }
 
-        // TODO: IMPLEMENT ALGORITHM HERE!
-        //extendActivePath(stream, matching, epsilon, &available_free_nodes, disjoint_augmenting_paths, removed_vertices);
-        //contractAndAugment(stream, &available_free_nodes, &disjoint_augmenting_paths);
-        //backtrackStuckStructures(&available_free_nodes);
+        extendActivePath(stream, matching, &available_free_nodes, disjoint_augmenting_paths, removed_vertices);
+        contractAndAugment(stream, &available_free_nodes, &disjoint_augmenting_paths);
+        backtrackStuckStructures(&available_free_nodes);
     }
 
     return disjoint_augmenting_paths;
@@ -484,10 +468,6 @@ int main() {
 
     //Stream* stream = new StreamFromFile("example.txt");
     Stream* stream = new StreamFromMemory("example.txt");
-
-    //Matching matching = get2ApproximateMatching(stream);
-
-    //std::cout << "Matching size: " << matching.size() << std::endl;
 
     testing();
 

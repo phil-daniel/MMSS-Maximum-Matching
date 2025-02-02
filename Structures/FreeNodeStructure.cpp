@@ -65,7 +65,6 @@ void FreeNodeStructure::contract(
 
     // current_pos now holds the LCA of u and v.
     GraphNode* lca = current_pos;
-    // TODO: need to ensure deletion
     // TODO: need to link children to blossom
     GraphBlossom* new_blossom = new GraphBlossom();
     new_blossom->nodesInBlossom.insert(lca);
@@ -104,6 +103,42 @@ void FreeNodeStructure::contract(
         new_blossom->isOuterVertex = true;
     } else {
         new_blossom->isOuterVertex = ! new_blossom->parent->isOuterVertex;
+    }
+}
+
+void FreeNodeStructure::backtrack() {
+    // If the structure is on hold or has been modified then it isn't stuck and hence doesn't
+    // need modifying.
+    if (on_hold || modified) {
+        return;
+    }
+
+    // Updating the working node to the previous outer vertex (i.e. parent of the parent of the current).
+    GraphNode* new_working_node = working_node;
+    if (new_working_node->parent != nullptr) {
+        new_working_node = new_working_node->parent->parent;
+    }
+
+    working_node = new_working_node;
+
+    // TODO: Make structure inactive? This should already be done by setting working node to nullptr
+
+
+}
+
+void FreeNodeStructure::deleteStructure() {
+    // TODO: What if it is a blossom -> need to remove the graph nodes within it.
+    // Deleting all the GraphNodes within the structure
+    queue<GraphNode*> to_delete;
+    to_delete.push(free_node_root);
+
+    while (to_delete.empty() == false) {
+        GraphNode* item = to_delete.front();
+        to_delete.pop();
+        for (GraphNode* child : item->children) {
+            to_delete.push(child);
+        }
+        delete item;
     }
 }
 
