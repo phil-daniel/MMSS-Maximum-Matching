@@ -19,8 +19,13 @@ class AvailableFreeNodes {
     public:
         FreeNodeStructure* getFreeNodeStructFromVertex(Vertex vertex);
         void setFreeNodeStructFromVertex(Vertex vertex, FreeNodeStructure* structure);
+        void removeNodeFromStruct(GraphNode* node, FreeNodeStructure* structure);
+        void addNodeToStruct(GraphNode* node, GraphNode* main_node, FreeNodeStructure* structure);
         FreeNodeStructure* createNewStruct(GraphVertex* vertex);
         void deleteStructures() const;
+    private:
+        void removeBlossomFromStruct(GraphBlossom* blossom, FreeNodeStructure* structure);
+        void addBlossomToStruct(GraphBlossom* blossom, GraphNode* main_node, FreeNodeStructure* structure);
 };
 
 #endif //AVAILABLEFREENODES_H

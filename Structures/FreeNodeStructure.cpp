@@ -2,7 +2,7 @@
 
 #include <iostream>
 
-GraphNode *FreeNodeStructure::getGraphNodeFromVertex(int vertex) {
+GraphNode* FreeNodeStructure::getGraphNodeFromVertex(int vertex) {
     // If the vertex is not stored here return a null pointer
     if (vertex_to_graph_node.count(vertex) == 0) {
         return nullptr;
@@ -11,48 +11,12 @@ GraphNode *FreeNodeStructure::getGraphNodeFromVertex(int vertex) {
     return vertex_to_graph_node.at(vertex);
 }
 
-void FreeNodeStructure::addBlossomToStructure(GraphNode* main_node, GraphBlossom *blossom) {
-    for (GraphNode* node : blossom->nodesInBlossom) {
-        addGraphNodeToStructure(main_node, node);
-    }
+void FreeNodeStructure::addVertexToStruct(Vertex vertex, GraphNode *node) {
+    vertex_to_graph_node[vertex] = node;
 }
 
-
-void FreeNodeStructure::addGraphNodeToStructure(GraphNode* main_node, GraphNode* curr_node) {
-    // If we have a blossom we'd like to point to the "main_node", i.e. the blossom
-    // rather than the individual GraphVertex
-    if (curr_node->isBlossom) {
-        GraphBlossom* graph_blossom = dynamic_cast<GraphBlossom *>(curr_node);
-        addBlossomToStructure(main_node, graph_blossom);
-    } else {
-        vertex_to_graph_node.insert({curr_node->vertex_id, main_node});
-    }
-
-    // Recursively adding every child from the structure as well
-    for (GraphNode* child : curr_node->children) {
-        addGraphNodeToStructure(child, child);
-    }
-}
-
-void FreeNodeStructure::removeGraphNodeFromStructure(GraphNode* node) {
-    if (node->isBlossom) {
-        GraphBlossom* blossom = dynamic_cast<GraphBlossom*>(node);
-        removeBlossomFromStructure(blossom);
-    } else {
-        GraphVertex* vertex = dynamic_cast<GraphVertex*>(node);
-        vertex_to_graph_node.erase(vertex->vertex_id);
-    }
-
-    // Recursively removing every child from the structure as well
-    for (GraphNode* child : node->children) {
-        removeGraphNodeFromStructure(child);
-    }
-}
-
-void FreeNodeStructure::removeBlossomFromStructure(GraphBlossom* blossom) {
-    for (GraphNode* node : blossom->nodesInBlossom) {
-        removeGraphNodeFromStructure(node);
-    }
+void FreeNodeStructure::removeVertexFromStruct(Vertex vertex) {
+    vertex_to_graph_node.erase(vertex);
 }
 
 void FreeNodeStructure::contract(

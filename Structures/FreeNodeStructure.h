@@ -25,15 +25,12 @@ class FreeNodeStructure {
     // Functions
     public:
         GraphNode* getGraphNodeFromVertex(Vertex vertex);
-        void addGraphNodeToStructure(GraphNode* main_node, GraphNode* curr_node);
-        void removeGraphNodeFromStructure(GraphNode* node);
+        void addVertexToStruct(Vertex vertex, GraphNode* node);
+        void removeVertexFromStruct(Vertex vertex);
         void contract(Edge unmatched_arc);
         void backtrack();
         void deleteStructure();
         friend std::ostream &operator<<(std::ostream &os, const FreeNodeStructure &structure);
-    private:
-        void removeBlossomFromStructure(GraphBlossom* blossom);
-        void addBlossomToStructure(GraphNode* main_node, GraphBlossom* blossom);
 };
 
 #endif //FREENODESTRUCTURE_H

@@ -171,6 +171,7 @@ void overtake(
 
     Edge matched_arc_using_u = matching->getMatchedEdgeFromVertex(unmatched_arc.first);
     int current_label = matching->getLabel(matched_arc_using_u);
+    // TODO: needs nullptr check and merge with below
 
     // Case 1: Our matched_arc is not currently in a structure
     if (struct_of_t == nullptr && struct_of_v == nullptr) {
@@ -185,11 +186,7 @@ void overtake(
         vertex_v.isOuterVertex = ! vertex_v.parent->isOuterVertex;
         vertex_t.isOuterVertex = ! vertex_v.isOuterVertex;
 
-        struct_of_u->addGraphNodeToStructure(&vertex_v, &vertex_v);
-        struct_of_u->addGraphNodeToStructure(&vertex_t, &vertex_t);
-
-        available_free_nodes->setFreeNodeStructFromVertex(unmatched_arc.second, struct_of_u);
-        available_free_nodes->setFreeNodeStructFromVertex(matched_arc.second, struct_of_u);
+        available_free_nodes->addNodeToStruct(&vertex_v, &vertex_v, struct_of_u);
 
         matching->setLabel(matched_arc, current_label+1);
     }
@@ -238,20 +235,25 @@ void overtake(
             GraphNode* parent_of_v_in_struct_v = vertex_v->parent;
             parent_of_v_in_struct_v->children.erase(vertex_v);
 
-            // TODO: Remove each node from vertex_to_graph_node -> do we want to move this out?
-
             vertex_v->parent = vertex_u;
             vertex_v->parent_index = unmatched_arc.first;
-            // TODO: clean up if blossom structure
-
-            // NEED TO REMOVE/ADD THE NEW VERTICES TO STRUCTURES
 
             vertex_u->children.insert(vertex_v);
-            // TODO: need to update the vertex_to_children dictionary, can do length measurements at the same time
-            // TODO: also need to check if the working vertex has been changed by the overtake
 
-            // TODO: need to clean up if anything linking
-            // TODO: update length measurements
+            available_free_nodes->removeNodeFromStruct(vertex_v, struct_of_u);
+            available_free_nodes->addNodeToStruct(vertex_v, vertex_u, struct_of_u);
+
+            // TODO: DOUBLE CHECK WE ARE DOING THIS CORRECT (I.E. DO WE NEED TO GO TO PARENT OF PARENT)
+            GraphNode* old_working_node = struct_of_v->working_node;
+            if (struct_of_v->getGraphNodeFromVertex(old_working_node->vertex_id) == nullptr) {
+                struct_of_v->working_node = parent_of_v_in_struct_v;
+                struct_of_u->working_node = old_working_node;
+            }
+
+            struct_of_u->modified = true;
+            struct_of_v->modified = true;
+
+            updateChildLabels(vertex_v, current_label+1, matching);
         }
     }
 }
