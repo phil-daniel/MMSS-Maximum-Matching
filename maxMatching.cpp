@@ -164,9 +164,6 @@ void overtake(
     Matching* matching
 ) {
     // TODO: Add input check?
-    // TODO: How do we know its a matched_arc?
-
-    // TODO: Need to do length measurement updates somewhere?
 
     FreeNodeStructure* struct_of_u = available_free_nodes->getFreeNodeStructFromVertex(unmatched_arc.first);
     FreeNodeStructure* struct_of_v = available_free_nodes->getFreeNodeStructFromVertex(unmatched_arc.second);
@@ -188,8 +185,8 @@ void overtake(
         vertex_v.isOuterVertex = ! vertex_v.parent->isOuterVertex;
         vertex_t.isOuterVertex = ! vertex_v.isOuterVertex;
 
-        struct_of_u->addGraphNodeToVertex(unmatched_arc.second, &vertex_v);
-        struct_of_u->addGraphNodeToVertex(matched_arc.second, &vertex_t);
+        struct_of_u->addGraphNodeToStructure(&vertex_v, &vertex_v);
+        struct_of_u->addGraphNodeToStructure(&vertex_t, &vertex_t);
 
         available_free_nodes->setFreeNodeStructFromVertex(unmatched_arc.second, struct_of_u);
         available_free_nodes->setFreeNodeStructFromVertex(matched_arc.second, struct_of_u);
@@ -208,8 +205,6 @@ void overtake(
             GraphNode* vertex_v = struct_of_t->getGraphNodeFromVertex(matched_arc.first);
             GraphNode* vertex_t = struct_of_t->getGraphNodeFromVertex(matched_arc.second);
 
-            // TODO: need to sort out blossom overtakes children
-
             GraphNode* current_parent_of_v = vertex_v->parent;
             // Removing vertex v from the set of it's parent's children.
             current_parent_of_v->children.erase(vertex_v);
@@ -222,7 +217,16 @@ void overtake(
 
             struct_of_t->modified = true;
 
-            // TODO: Update length measurements?
+            int curr_label;
+            if (vertex_u->parent == nullptr) {
+                // Vertex_u is the root of the structure;
+                curr_label = 0;
+            } else {
+                Edge parent_matched_edge =  matching->getMatchedEdgeFromVertex(vertex_u->vertex_id);
+                // Here we can't just use unmatched_edge.first as it could be part of a blossom.
+                curr_label = matching->getLabel(parent_matched_edge);
+            }
+            updateChildLabels(vertex_v, curr_label+1, matching);
 
         }
         // Case 2.2: If the matched arc is in a different structure to u, with the unmatched arc (u,v) joining the two structures.
@@ -233,7 +237,14 @@ void overtake(
 
             GraphNode* parent_of_v_in_struct_v = vertex_v->parent;
             parent_of_v_in_struct_v->children.erase(vertex_v);
+
+            // TODO: Remove each node from vertex_to_graph_node -> do we want to move this out?
+
+            vertex_v->parent = vertex_u;
+            vertex_v->parent_index = unmatched_arc.first;
             // TODO: clean up if blossom structure
+
+            // NEED TO REMOVE/ADD THE NEW VERTICES TO STRUCTURES
 
             vertex_u->children.insert(vertex_v);
             // TODO: need to update the vertex_to_children dictionary, can do length measurements at the same time
@@ -435,61 +446,72 @@ void testing() {
 
     zero->children.insert(one);
     one->parent = zero;
+    one->parent_index = 0;
     zero->children.insert(two);
     two->parent = zero;
     one->children.insert(three);
     three->parent = one;
+    three->parent_index = 3;
     two->children.insert(four);
     four->parent = two;
+    four->parent_index = 2;
     three->children.insert(five);
     five->parent = three;
+    five->parent_index = 3;
     four->children.insert(six);
     six->parent = four;
+    six->parent_index = 4;
     five->children.insert(seven);
     seven->parent = five;
+    seven->parent_index = 5;
     six->children.insert(eight);
     eight->parent = six;
+    eight->parent_index = 6;
     seven->children.insert(nine);
     nine->parent = seven;
+    nine->parent_index = 7;
 
     AvailableFreeNodes available_free_nodes;
     FreeNodeStructure* structure = available_free_nodes.createNewStruct(zero);
-    structure->addGraphNodeToVertex(1, one);
-    structure->addGraphNodeToVertex(2, two);
-    structure->addGraphNodeToVertex(3, three);
-    structure->addGraphNodeToVertex(4, four);
-    structure->addGraphNodeToVertex(5, five);
-    structure->addGraphNodeToVertex(6, six);
-    structure->addGraphNodeToVertex(7, seven);
-    structure->addGraphNodeToVertex(8, eight);
-    structure->addGraphNodeToVertex(9, nine);
-
-    available_free_nodes.setFreeNodeStructFromVertex(0, structure);
-    available_free_nodes.setFreeNodeStructFromVertex(1, structure);
-    available_free_nodes.setFreeNodeStructFromVertex(2, structure);
-    available_free_nodes.setFreeNodeStructFromVertex(3, structure);
-    available_free_nodes.setFreeNodeStructFromVertex(4, structure);
-    available_free_nodes.setFreeNodeStructFromVertex(5, structure);
-    available_free_nodes.setFreeNodeStructFromVertex(6, structure);
-    available_free_nodes.setFreeNodeStructFromVertex(7, structure);
-    available_free_nodes.setFreeNodeStructFromVertex(8, structure);
-    available_free_nodes.setFreeNodeStructFromVertex(9, structure);
-
-    structure->free_node_root = zero;
-    structure->working_node = nine;
-    Matching matching;
-
-    overtake(make_pair(4,5), make_pair(5,7), &available_free_nodes, &matching);
 
     std::cout << *structure << std::endl;
 
-    vector<Edge> path = getLeafToRootPath(nine);
+    // available_free_nodes.setFreeNodeStructFromVertex(0, structure);
+    // available_free_nodes.setFreeNodeStructFromVertex(1, structure);
+    // available_free_nodes.setFreeNodeStructFromVertex(2, structure);
+    // available_free_nodes.setFreeNodeStructFromVertex(3, structure);
+    // available_free_nodes.setFreeNodeStructFromVertex(4, structure);
+    // available_free_nodes.setFreeNodeStructFromVertex(5, structure);
+    // available_free_nodes.setFreeNodeStructFromVertex(6, structure);
+    // available_free_nodes.setFreeNodeStructFromVertex(7, structure);
+    // available_free_nodes.setFreeNodeStructFromVertex(8, structure);
+    // available_free_nodes.setFreeNodeStructFromVertex(9, structure);
 
-    for (int i = 0; i < path.size(); i++) {
-        std::cout << path[i].first << " -> " << path[i].second << std::endl;
-    }
+    // structure->free_node_root = zero;
+    // structure->working_node = nine;
+    //
+    // Matching matching;
+    // matching.addEdge(make_pair(0, 1));
+    // matching.addEdge(make_pair(3, 5));
+    // matching.addEdge(make_pair(7, 9));
+    // matching.setLabel(make_pair(0, 1), 1);
+    //
+    // updateChildLabels(zero, 4, &matching);
 
-    available_free_nodes.deleteStructures();
+    //std::cout << *structure << std::endl;
+    // std::cout << matching << std::endl;
+
+    // overtake(make_pair(4,5), make_pair(5,7), &available_free_nodes, &matching);
+    //
+    // std::cout << *structure << std::endl;
+    //
+    // vector<Edge> path = getLeafToRootPath(nine);
+    //
+    // for (int i = 0; i < path.size(); i++) {
+    //     std::cout << path[i].first << " -> " << path[i].second << std::endl;
+    // }
+    //
+    // available_free_nodes.deleteStructures();
 
 }
 

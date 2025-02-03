@@ -11,8 +11,27 @@ GraphNode *FreeNodeStructure::getGraphNodeFromVertex(int vertex) {
     return vertex_to_graph_node.at(vertex);
 }
 
-void FreeNodeStructure::addGraphNodeToVertex(int vertex, GraphNode* node) {
-    vertex_to_graph_node.insert({vertex, node});
+void FreeNodeStructure::addBlossomToStructure(GraphNode* main_node, GraphBlossom *blossom) {
+    for (GraphNode* node : blossom->nodesInBlossom) {
+        addGraphNodeToStructure(main_node, node);
+    }
+}
+
+
+void FreeNodeStructure::addGraphNodeToStructure(GraphNode* main_node, GraphNode* curr_node) {
+    // If we have a blossom we'd like to point to the "main_node", i.e. the blossom
+    // rather than the individual GraphVertex
+    if (curr_node->isBlossom) {
+        GraphBlossom* graph_blossom = dynamic_cast<GraphBlossom *>(curr_node);
+        addBlossomToStructure(main_node, graph_blossom);
+    } else {
+        vertex_to_graph_node.insert({curr_node->vertex_id, main_node});
+    }
+
+    // Recursively adding every child from the structure as well
+    for (GraphNode* child : curr_node->children) {
+        addGraphNodeToStructure(child, child);
+    }
 }
 
 void FreeNodeStructure::removeGraphNodeFromStructure(GraphNode* node) {
@@ -21,17 +40,13 @@ void FreeNodeStructure::removeGraphNodeFromStructure(GraphNode* node) {
         removeBlossomFromStructure(blossom);
     } else {
         GraphVertex* vertex = dynamic_cast<GraphVertex*>(node);
-        removeVertexFromStructure(vertex);
+        vertex_to_graph_node.erase(vertex->vertex_id);
     }
 
     // Recursively removing every child from the structure as well
     for (GraphNode* child : node->children) {
         removeGraphNodeFromStructure(child);
     }
-}
-
-void FreeNodeStructure::removeVertexFromStructure(GraphVertex* vertex) {
-    vertex_to_graph_node.erase(vertex->vertex_id);
 }
 
 void FreeNodeStructure::removeBlossomFromStructure(GraphBlossom* blossom) {
@@ -127,7 +142,6 @@ void FreeNodeStructure::backtrack() {
 }
 
 void FreeNodeStructure::deleteStructure() {
-    // TODO: What if it is a blossom -> need to remove the graph nodes within it.
     // Deleting all the GraphNodes within the structure
     queue<GraphNode*> to_delete;
     to_delete.push(free_node_root);

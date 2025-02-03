@@ -47,7 +47,9 @@ Edge Matching::getMatchedEdgeFromVertex(Vertex vertex) {
 }
 
 int Matching::getLabel(Edge edge) {
-    // TODO: not in dict protection?
+    if (matched_edge_to_label.find(edge) == matched_edge_to_label.end()) {
+        return -1;
+    }
     return matched_edge_to_label[edge];
 }
 
@@ -65,3 +67,10 @@ void Matching::resetLabels() {
     }
 }
 
+std::ostream &operator<<(std::ostream &os, Matching &matching) {
+    os << "Matching:\n\t(Matched edge) : Label";
+    for (Edge edge : matching.matched_edges) {
+        os << "\n\t(" << edge.first << "->" << edge.second << ") : " << matching.getLabel(edge);
+    }
+    return os;
+}
