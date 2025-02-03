@@ -170,7 +170,11 @@ void overtake(
     FreeNodeStructure* struct_of_t = available_free_nodes->getFreeNodeStructFromVertex(matched_arc.second);
 
     Edge matched_arc_using_u = matching->getMatchedEdgeFromVertex(unmatched_arc.first);
-    int current_label = matching->getLabel(matched_arc_using_u);
+    int current_label = 0;
+    if (matched_arc_using_u.first != -1) {
+        // If the edge doesn't exist them getMatchedEdgeFromVertex will return (-1,-1)
+        current_label = matching->getLabel(matched_arc_using_u);
+    }
     // TODO: needs nullptr check and merge with below
 
     // Case 1: Our matched_arc is not currently in a structure
@@ -214,16 +218,7 @@ void overtake(
 
             struct_of_t->modified = true;
 
-            int curr_label;
-            if (vertex_u->parent == nullptr) {
-                // Vertex_u is the root of the structure;
-                curr_label = 0;
-            } else {
-                Edge parent_matched_edge =  matching->getMatchedEdgeFromVertex(vertex_u->vertex_id);
-                // Here we can't just use unmatched_edge.first as it could be part of a blossom.
-                curr_label = matching->getLabel(parent_matched_edge);
-            }
-            updateChildLabels(vertex_v, curr_label+1, matching);
+            updateChildLabels(vertex_v, current_label+1, matching);
 
         }
         // Case 2.2: If the matched arc is in a different structure to u, with the unmatched arc (u,v) joining the two structures.
@@ -243,7 +238,6 @@ void overtake(
             available_free_nodes->removeNodeFromStruct(vertex_v, struct_of_u);
             available_free_nodes->addNodeToStruct(vertex_v, vertex_u, struct_of_u);
 
-            // TODO: DOUBLE CHECK WE ARE DOING THIS CORRECT (I.E. DO WE NEED TO GO TO PARENT OF PARENT)
             GraphNode* old_working_node = struct_of_v->working_node;
             if (struct_of_v->getGraphNodeFromVertex(old_working_node->vertex_id) == nullptr) {
                 struct_of_v->working_node = parent_of_v_in_struct_v;
@@ -522,7 +516,8 @@ int main() {
     //Stream* stream = new StreamFromFile("example.txt");
     Stream* stream = new StreamFromMemory("example.txt");
 
-    testing();
+    Matching matching = algorithm(stream, 0.1f);
+    std::cout << matching << std::endl;
 
     delete stream;
 

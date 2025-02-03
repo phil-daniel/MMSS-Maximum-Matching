@@ -61,7 +61,7 @@ FreeNodeStructure* AvailableFreeNodes::createNewStruct(GraphVertex* vertex) {
     // Making the assumption that we are only going to be creating new structures which with vertices and not blossoms.
     FreeNodeStructure* new_struct = new FreeNodeStructure();
 
-    new_struct->addGraphNodeToStructure(vertex, vertex);
+    new_struct->addVertexToStruct(vertex->vertex_id, vertex);
     new_struct->free_node_root = vertex;
     new_struct->working_node = vertex;
     vertex->isOuterVertex = true;

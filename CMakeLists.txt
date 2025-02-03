@@ -15,6 +15,11 @@ add_executable(MaximumMatchings
         Structures/GraphStructure/GraphVertex.h
         Structures/GraphStructure/GraphVertex.cpp
         Structures/GraphStructure/GraphBlossom.cpp
+        types.h
+        Structures/AvailableFreeNodes.cpp
+        Structures/AvailableFreeNodes.h
+        Structures/Matching.cpp
+        Structures/Matching.h
 )
 
 include_directories(~/Programs/cpp_libs/boost_1_87_0/)
