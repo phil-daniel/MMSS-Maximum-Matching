@@ -138,6 +138,13 @@ void FreeNodeStructure::deleteStructure() {
         for (GraphNode* child : item->children) {
             to_delete.push(child);
         }
+
+        // If it is a blossom we need to remove everything within the blossom
+        if (item->isBlossom) {
+            GraphBlossom* blossom = dynamic_cast<GraphBlossom*>(item);
+            blossom->deleteContents();
+        }
+
         delete item;
     }
 }

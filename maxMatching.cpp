@@ -43,6 +43,29 @@ vector<Edge> getLeafToRootPath(
     return path;
 }
 
+void updateChildLabels(GraphNode* parent_matched_vertex, int new_label, Matching* matching) {
+    vector<GraphNode*> current_level = {parent_matched_vertex};
+    while (!current_level.empty()) {
+        // Need to go two levels down each time, otherwise we will be labelling unmatched edges
+        vector<GraphNode*> new_level = {};
+        for (GraphNode* node : current_level) {
+            for (GraphNode* child : node->children) {
+                // TODO: Should only have 1 child in for a matched edge.
+
+                // TODO: double check this logic is correct especially for blossoms
+                Edge matched_edge = make_pair(child->parent_index, child->vertex_id);
+                matching->setLabel(matched_edge, new_label);
+                new_label++;
+
+                for (GraphNode* grandchild : child->children) {
+                    new_level.emplace_back(grandchild);
+                }
+            }
+        }
+        current_level = new_level;
+    }
+}
+
 void augment(
     vector<vector<Edge>>* disjoint_augmenting_paths,
     Edge unmatched_arc,
@@ -137,7 +160,8 @@ void backtrackStuckStructures(
 void overtake(
     Edge unmatched_arc, // (u,v)
     Edge matched_arc, // (v,t)
-    AvailableFreeNodes* available_free_nodes
+    AvailableFreeNodes* available_free_nodes,
+    Matching* matching
 ) {
     // TODO: Add input check?
     // TODO: How do we know its a matched_arc?
@@ -147,6 +171,9 @@ void overtake(
     FreeNodeStructure* struct_of_u = available_free_nodes->getFreeNodeStructFromVertex(unmatched_arc.first);
     FreeNodeStructure* struct_of_v = available_free_nodes->getFreeNodeStructFromVertex(unmatched_arc.second);
     FreeNodeStructure* struct_of_t = available_free_nodes->getFreeNodeStructFromVertex(matched_arc.second);
+
+    Edge matched_arc_using_u = matching->getMatchedEdgeFromVertex(unmatched_arc.first);
+    int current_label = matching->getLabel(matched_arc_using_u);
 
     // Case 1: Our matched_arc is not currently in a structure
     if (struct_of_t == nullptr && struct_of_v == nullptr) {
@@ -167,6 +194,7 @@ void overtake(
         available_free_nodes->setFreeNodeStructFromVertex(unmatched_arc.second, struct_of_u);
         available_free_nodes->setFreeNodeStructFromVertex(matched_arc.second, struct_of_u);
 
+        matching->setLabel(matched_arc, current_label+1);
     }
 
     // Case 2: If our matched_arc is currently in a structure.
@@ -296,13 +324,13 @@ void extendActivePath(
         else {
             // Getting the edge which is the parent to u.
             Edge matching_using_u = matching->getMatchedEdgeFromVertex(edge.first);
-            int distance_to_u = matching->getLabelFromMatchedEdge(matching_using_u);
+            int distance_to_u = matching->getLabel(matching_using_u);
 
             Edge matching_using_v = matching->getMatchedEdgeFromVertex(edge.second);
-            int distance_to_v = matching->getLabelFromMatchedEdge(matching_using_v);
+            int distance_to_v = matching->getLabel(matching_using_v);
 
             if (distance_to_u + 1 < distance_to_v) {
-                overtake(edge, matching_using_v, available_free_nodes);
+                overtake(edge, matching_using_v, available_free_nodes, matching);
             }
         }
 
@@ -394,47 +422,47 @@ Matching algorithm(
 }
 
 void testing() {
-    GraphVertex zero = GraphVertex(0);
-    GraphVertex one = GraphVertex(1);
-    GraphVertex two = GraphVertex(2);
-    GraphVertex three = GraphVertex(3);
-    GraphVertex four = GraphVertex(4);
-    GraphVertex five = GraphVertex(5);
-    GraphVertex six = GraphVertex(6);
-    GraphVertex seven = GraphVertex(7);
-    GraphVertex eight = GraphVertex(8);
-    GraphVertex nine = GraphVertex(9);
+    GraphVertex* zero = new GraphVertex(0);
+    GraphVertex* one = new GraphVertex(1);
+    GraphVertex* two = new GraphVertex(2);
+    GraphVertex* three = new GraphVertex(3);
+    GraphVertex* four = new GraphVertex(4);
+    GraphVertex* five = new GraphVertex(5);
+    GraphVertex* six = new GraphVertex(6);
+    GraphVertex* seven = new GraphVertex(7);
+    GraphVertex* eight = new GraphVertex(8);
+    GraphVertex* nine = new GraphVertex(9);
 
-    zero.children.insert(&one);
-    one.parent = &zero;
-    zero.children.insert(&two);
-    two.parent = &zero;
-    one.children.insert(&three);
-    three.parent = &one;
-    two.children.insert(&four);
-    four.parent = &two;
-    three.children.insert(&five);
-    five.parent = &three;
-    four.children.insert(&six);
-    six.parent = &four;
-    five.children.insert(&seven);
-    seven.parent = &five;
-    six.children.insert(&eight);
-    eight.parent = &six;
-    seven.children.insert(&nine);
-    nine.parent = &seven;
+    zero->children.insert(one);
+    one->parent = zero;
+    zero->children.insert(two);
+    two->parent = zero;
+    one->children.insert(three);
+    three->parent = one;
+    two->children.insert(four);
+    four->parent = two;
+    three->children.insert(five);
+    five->parent = three;
+    four->children.insert(six);
+    six->parent = four;
+    five->children.insert(seven);
+    seven->parent = five;
+    six->children.insert(eight);
+    eight->parent = six;
+    seven->children.insert(nine);
+    nine->parent = seven;
 
     AvailableFreeNodes available_free_nodes;
-    FreeNodeStructure* structure = available_free_nodes.createNewStruct(&zero);
-    structure->addGraphNodeToVertex(1, &one);
-    structure->addGraphNodeToVertex(2, &two);
-    structure->addGraphNodeToVertex(3, &three);
-    structure->addGraphNodeToVertex(4, &four);
-    structure->addGraphNodeToVertex(5, &five);
-    structure->addGraphNodeToVertex(6, &six);
-    structure->addGraphNodeToVertex(7, &seven);
-    structure->addGraphNodeToVertex(8, &eight);
-    structure->addGraphNodeToVertex(9, &nine);
+    FreeNodeStructure* structure = available_free_nodes.createNewStruct(zero);
+    structure->addGraphNodeToVertex(1, one);
+    structure->addGraphNodeToVertex(2, two);
+    structure->addGraphNodeToVertex(3, three);
+    structure->addGraphNodeToVertex(4, four);
+    structure->addGraphNodeToVertex(5, five);
+    structure->addGraphNodeToVertex(6, six);
+    structure->addGraphNodeToVertex(7, seven);
+    structure->addGraphNodeToVertex(8, eight);
+    structure->addGraphNodeToVertex(9, nine);
 
     available_free_nodes.setFreeNodeStructFromVertex(0, structure);
     available_free_nodes.setFreeNodeStructFromVertex(1, structure);
@@ -447,20 +475,21 @@ void testing() {
     available_free_nodes.setFreeNodeStructFromVertex(8, structure);
     available_free_nodes.setFreeNodeStructFromVertex(9, structure);
 
-    structure->free_node_root = &zero;
-    structure->working_node = &nine;
+    structure->free_node_root = zero;
+    structure->working_node = nine;
+    Matching matching;
 
-    overtake(make_pair(4,5), make_pair(5,7), &available_free_nodes);
+    overtake(make_pair(4,5), make_pair(5,7), &available_free_nodes, &matching);
 
     std::cout << *structure << std::endl;
 
-    vector<Edge> path = getLeafToRootPath(&nine);
+    vector<Edge> path = getLeafToRootPath(nine);
 
     for (int i = 0; i < path.size(); i++) {
         std::cout << path[i].first << " -> " << path[i].second << std::endl;
     }
 
-    delete structure;
+    available_free_nodes.deleteStructures();
 
 }
 

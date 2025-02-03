@@ -19,6 +19,7 @@ class GraphBlossom : public GraphNode {
     public:
         explicit GraphBlossom();
         void addGraphNodeToBlossom(GraphNode* node);
+        void deleteContents();
         friend std::ostream &operator<<(std::ostream &os, const GraphBlossom &blossom);
 };
 

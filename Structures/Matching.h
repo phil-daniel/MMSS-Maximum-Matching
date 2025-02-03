@@ -18,7 +18,8 @@ class Matching {
         void removeEdge(Edge edge);
         bool isInMatching(Edge edge);
         Edge getMatchedEdgeFromVertex(Vertex vertex);
-        int getLabelFromMatchedEdge(Edge edge);
+        int getLabel(Edge edge);
+        void setLabel(Edge edge, int label);
 };
 
 #endif //MATCHING_H

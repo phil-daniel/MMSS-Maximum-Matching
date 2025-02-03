@@ -46,10 +46,15 @@ Edge Matching::getMatchedEdgeFromVertex(Vertex vertex) {
     return vertex_to_matched_edge[vertex];
 }
 
-int Matching::getLabelFromMatchedEdge(Edge edge) {
+int Matching::getLabel(Edge edge) {
     // TODO: not in dict protection?
     return matched_edge_to_label[edge];
 }
+
+void Matching::setLabel(Edge edge, int label) {
+    matched_edge_to_label[edge] = label;
+}
+
 
 void Matching::resetLabels() {
     // Emptying the map.

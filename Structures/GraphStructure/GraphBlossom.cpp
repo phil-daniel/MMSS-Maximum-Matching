@@ -30,6 +30,13 @@ void GraphBlossom::addGraphNodeToBlossom(GraphNode* node) {
     }
 }
 
+void GraphBlossom::deleteContents() {
+    for (GraphNode* node : nodesInBlossom) {
+        delete node;
+    }
+}
+
+
 // Extracts the relevant information from the GraphBlossom to be outputed
 void GraphBlossom::printHelper(std::ostream &os, int depth) const {
     os << string(depth, '\t') << "Blossom:";
