@@ -4,7 +4,8 @@
 
 GraphNode* FreeNodeStructure::getGraphNodeFromVertex(int vertex) {
     // If the vertex is not stored here return a null pointer
-    if (vertex_to_graph_node.count(vertex) == 0) {
+
+    if (vertex_to_graph_node.find(vertex) == vertex_to_graph_node.end()) {
         return nullptr;
     }
 
@@ -38,7 +39,7 @@ void FreeNodeStructure::contract(
 
     current_pos = node_of_v;
     // While path from v_to_root and path from u_to_root are separated
-    while (u_to_root_path.find(current_pos) == u_to_root_path.end()) {
+    while (current_pos != nullptr && u_to_root_path.find(current_pos) == u_to_root_path.end()) {
         current_pos = current_pos->parent;
     }
 
@@ -47,15 +48,41 @@ void FreeNodeStructure::contract(
     // TODO: need to link children to blossom
     GraphBlossom* new_blossom = new GraphBlossom();
     new_blossom->nodesInBlossom.insert(lca);
+    if (lca->isBlossom) {
+        GraphBlossom* blossom_node = dynamic_cast<GraphBlossom*>(lca);
+        for (Vertex vertex : blossom_node->verticesInBlossom) {
+            addVertexToStruct(vertex, new_blossom);
+        }
+    } else {
+        addVertexToStruct(lca->vertex_id, new_blossom);
+    }
     current_pos = node_of_v;
     while (current_pos != lca && current_pos != nullptr) {
         new_blossom->addGraphNodeToBlossom(current_pos);
+
+        if (current_pos->isBlossom) {
+            GraphBlossom* blossom_node = dynamic_cast<GraphBlossom*>(current_pos);
+            for (Vertex vertex : blossom_node->verticesInBlossom) {
+                addVertexToStruct(vertex, new_blossom);
+            }
+        } else {
+            addVertexToStruct(current_pos->vertex_id, new_blossom);
+        }
 
         current_pos = current_pos->parent;
     }
     current_pos = node_of_u;
     while (current_pos != lca && current_pos != nullptr) {
         new_blossom->addGraphNodeToBlossom(current_pos);
+
+        if (current_pos->isBlossom) {
+            GraphBlossom* blossom_node = dynamic_cast<GraphBlossom*>(current_pos);
+            for (Vertex vertex : blossom_node->verticesInBlossom) {
+                addVertexToStruct(vertex, new_blossom);
+            }
+        } else {
+            addVertexToStruct(current_pos->vertex_id, new_blossom);
+        }
 
         current_pos = current_pos->parent;
     }
@@ -88,7 +115,7 @@ void FreeNodeStructure::contract(
 void FreeNodeStructure::backtrack() {
     // If the structure is on hold or has been modified then it isn't stuck and hence doesn't
     // need modifying.
-    if (on_hold || modified) {
+    if (on_hold || modified || removed) {
         return;
     }
 

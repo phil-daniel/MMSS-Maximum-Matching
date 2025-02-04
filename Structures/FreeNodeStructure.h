@@ -18,6 +18,7 @@ class FreeNodeStructure {
     public:
         bool on_hold = false;
         bool modified = false;
+        bool removed = false;
         GraphNode* working_node;
         GraphNode* free_node_root;
         unordered_map<Vertex, GraphNode*> vertex_to_graph_node;
@@ -26,6 +27,7 @@ class FreeNodeStructure {
     public:
         GraphNode* getGraphNodeFromVertex(Vertex vertex);
         void addVertexToStruct(Vertex vertex, GraphNode* node);
+        void addBlossomToStruct(GraphBlossom* max_blossom, GraphBlossom* curr_blossom);
         void removeVertexFromStruct(Vertex vertex);
         void contract(Edge unmatched_arc);
         void backtrack();

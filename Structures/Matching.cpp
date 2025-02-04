@@ -1,38 +1,48 @@
 #include "Matching.h"
 
+#include <iostream>
+
+Edge Matching::getStandardEdge(Edge edge) {
+    int min = (edge.first < edge.second) ? edge.first : edge.second;
+    int max = (edge.first > edge.second) ? edge.first : edge.second;
+    return Edge(min, max);
+}
+
 void Matching::augmentMatching(vector<vector<Edge>>* disjoint_augmenting_paths) {
     for (vector<Edge> augmenting_path : (*disjoint_augmenting_paths)) {
         for (Edge edge : augmenting_path) {
             // If the edge isn't in the matching, we add it to the matching.
             // Otherwise we remove it from the matching.
-            if (matched_edges.find(edge) == matched_edges.end()) {
-                matched_edges.insert(edge);
-                vertex_to_matched_edge[edge.first] = edge;
-                vertex_to_matched_edge[edge.second] = edge;
+            Edge std_edge = getStandardEdge(edge);
+            if (matched_edges.find(std_edge) == matched_edges.end()) {
+                addEdge(std_edge);
             } else {
-                matched_edges.erase(edge);
-                matched_edge_to_label.erase(edge);
-                vertex_to_matched_edge.erase(edge.first);
-                vertex_to_matched_edge.erase(edge.second);
+                std::cout << "remove: " << edge.first << "->" << edge.second << std::endl;
+                removeEdge(std_edge);
             }
         }
     }
+    std::cout << "size " << disjoint_augmenting_paths->size() << std::endl;
 }
 
 void Matching::addEdge(Edge edge) {
-    matched_edges.insert(edge);
-    vertex_to_matched_edge[edge.first] = edge;
-    vertex_to_matched_edge[edge.second] = edge;
+    Edge std_edge = getStandardEdge(edge);
+    matched_edges.insert(std_edge);
+    vertex_to_matched_edge[edge.first] = std_edge;
+    vertex_to_matched_edge[edge.second] = std_edge;
 }
 
 void Matching::removeEdge(Edge edge) {
-    matched_edges.erase(edge);
-    vertex_to_matched_edge.erase(edge.first);
-    vertex_to_matched_edge.erase(edge.second);
+    Edge std_edge = getStandardEdge(edge);
+    matched_edges.erase(std_edge);
+    matched_edge_to_label.erase(std_edge);
+    vertex_to_matched_edge.erase(std_edge.first);
+    vertex_to_matched_edge.erase(std_edge.second);
 }
 
 bool Matching::isInMatching(Edge edge) {
-    if (matched_edges.find(edge) == matched_edges.end()) {
+    Edge std_edge = getStandardEdge(edge);
+    if (matched_edges.find(std_edge) == matched_edges.end()) {
         return false;
     }
     return true;
@@ -47,16 +57,17 @@ Edge Matching::getMatchedEdgeFromVertex(Vertex vertex) {
 }
 
 int Matching::getLabel(Edge edge) {
-    if (matched_edge_to_label.find(edge) == matched_edge_to_label.end()) {
+    Edge std_edge = getStandardEdge(edge);
+    if (matched_edge_to_label.find(std_edge) == matched_edge_to_label.end()) {
         return -1;
     }
-    return matched_edge_to_label[edge];
+    return matched_edge_to_label[std_edge];
 }
 
 void Matching::setLabel(Edge edge, int label) {
-    matched_edge_to_label[edge] = label;
+    Edge std_edge = getStandardEdge(edge);
+    matched_edge_to_label[std_edge] = label;
 }
-
 
 void Matching::resetLabels() {
     // Emptying the map.

@@ -78,17 +78,16 @@ void augment(
     vector<Edge> augmenting_path = {unmatched_arc};
     vector<Edge> root_of_u_to_u = {};
     vector<Edge> v_to_root_of_v = {};
-
     if (struct_of_u != nullptr) {
         GraphNode *graph_node_of_u = struct_of_u->getGraphNodeFromVertex(unmatched_arc.first);
         root_of_u_to_u = getLeafToRootPath(graph_node_of_u);
         reverse(root_of_u_to_u.begin(), root_of_u_to_u.end());
-        struct_of_u->on_hold = true;
+        struct_of_u->removed = true;
     }
     if (struct_of_v != nullptr) {
         GraphNode *graph_node_of_v = struct_of_v->getGraphNodeFromVertex(unmatched_arc.second);
         v_to_root_of_v = getLeafToRootPath(graph_node_of_v);
-        struct_of_v->on_hold = true;
+        struct_of_v->removed = true;
     }
 
     // TODO: Do we actually have to order the augmenting path? Doesn't necessarily seem needed.
@@ -96,7 +95,6 @@ void augment(
     augmenting_path.insert(augmenting_path.end(), v_to_root_of_v.begin(), v_to_root_of_v.end());
 
     // TODO: Need to remove vertices? - Does making them on hold do the same thing?
-
     disjoint_augmenting_paths->emplace_back(augmenting_path);
 }
 
@@ -115,11 +113,18 @@ void contractAndAugment(
         FreeNodeStructure* struct_of_u = available_free_nodes->getFreeNodeStructFromVertex(edge.first);
         FreeNodeStructure* struct_of_v = available_free_nodes->getFreeNodeStructFromVertex(edge.second);
 
-        // TODO: Error handling for nullptr
-
-        if (struct_of_u == struct_of_v) {
-            // Contract
-            struct_of_u->contract(edge);
+        // Handling either of them being not part of a structure (i.e. nullptr) and ensuring they are in the same struct
+        if (struct_of_u != nullptr && struct_of_u == struct_of_v && !struct_of_u->removed) {
+            // We know both of these nodes are in the same structure now.
+            GraphNode* node_of_u = struct_of_u->getGraphNodeFromVertex(edge.first);
+            GraphNode* node_of_v = struct_of_u->getGraphNodeFromVertex(edge.second);
+            if (node_of_u != node_of_v) {
+                // We now know they aren't part of the same blossom -> we don't need to contract if it's already a blossom
+                if (node_of_u->isOuterVertex && node_of_v->isOuterVertex) {
+                    // Contract
+                    struct_of_u->contract(edge);
+                }
+            }
         }
 
         // Reading next edge
@@ -135,11 +140,11 @@ void contractAndAugment(
         FreeNodeStructure* struct_of_u = available_free_nodes->getFreeNodeStructFromVertex(edge.first);
         FreeNodeStructure* struct_of_v = available_free_nodes->getFreeNodeStructFromVertex(edge.second);
 
-        if (struct_of_u != struct_of_v) {
+        // TODO: temp added nullptr handling here
+        if (struct_of_u != nullptr && struct_of_v != nullptr && struct_of_u != struct_of_v) {
             GraphNode* node_of_u = struct_of_u->getGraphNodeFromVertex(edge.first);
             GraphNode* node_of_v = struct_of_v->getGraphNodeFromVertex(edge.second);
-
-            if (node_of_u->isOuterVertex && node_of_v->isOuterVertex) {
+            if (node_of_u->isOuterVertex && node_of_v->isOuterVertex && ! (struct_of_u->removed || struct_of_v->removed)) {
                 augment(disjoint_augmenting_paths, edge, available_free_nodes);
             }
         }
@@ -179,18 +184,18 @@ void overtake(
 
     // Case 1: Our matched_arc is not currently in a structure
     if (struct_of_t == nullptr && struct_of_v == nullptr) {
-        GraphVertex vertex_v = GraphVertex(unmatched_arc.second);
-        GraphVertex vertex_t = GraphVertex(matched_arc.second);
-        vertex_v.parent = struct_of_u->working_node;
-        vertex_t.parent = &vertex_v;
-        vertex_v.children.insert(&vertex_t);
-        struct_of_u->working_node->children.insert(&vertex_v);
-        struct_of_u->working_node = &vertex_v;
+        GraphVertex* vertex_v = new GraphVertex(unmatched_arc.second);
+        GraphVertex* vertex_t = new GraphVertex(matched_arc.second);
+        vertex_v->parent = struct_of_u->working_node;
+        vertex_t->parent = vertex_v;
+        vertex_v->children.insert(vertex_t);
+        struct_of_u->working_node->children.insert(vertex_v);
+        struct_of_u->working_node = vertex_v;
 
-        vertex_v.isOuterVertex = ! vertex_v.parent->isOuterVertex;
-        vertex_t.isOuterVertex = ! vertex_v.isOuterVertex;
+        vertex_v->isOuterVertex = ! vertex_v->parent->isOuterVertex;
+        vertex_t->isOuterVertex = ! vertex_v->isOuterVertex;
 
-        available_free_nodes->addNodeToStruct(&vertex_v, &vertex_v, struct_of_u);
+        available_free_nodes->addNodeToStruct(vertex_v, vertex_v, struct_of_u);
 
         matching->setLabel(matched_arc, current_label+1);
     }
@@ -256,12 +261,13 @@ void extendActivePath(
     Stream* stream,
     Matching* matching,
     AvailableFreeNodes* available_free_nodes,
-    vector<vector<Edge>> disjoint_augmenting_paths,
+    vector<vector<Edge>>* disjoint_augmenting_paths,
     set<Vertex> removed_vertices
 ) {
     Edge edge = stream->readStream();
     // edges are only -1 if we have reached the end of the stream.
     while (edge.first != -1) {
+        // TODO: Do we need to do each direction of an arc?
 
         // Checking whether you need to create a new FreeNodeStructure for these two vertices. Requirements:
         // - Is the vertex not involved in a matching
@@ -293,7 +299,16 @@ void extendActivePath(
         // Case 2: If blossom1 is in the same node as blossom2, vertex1 isn't a working vertex
         // or the edge is already matched, we skip this edge.
         FreeNodeStructure* struct_of_u = available_free_nodes->getFreeNodeStructFromVertex(edge.first);
+        // TODO: Is this correct, if nullptr for u, we skip?
+        if (struct_of_u == nullptr) {
+            edge = stream->readStream();
+            continue;
+        }
         FreeNodeStructure* struct_of_v = available_free_nodes->getFreeNodeStructFromVertex(edge.second);
+        if (struct_of_u->removed || (struct_of_v != nullptr && struct_of_v->removed) ) {
+            edge = stream->readStream();
+            continue;
+        }
         if (
             (
                 struct_of_u != nullptr && struct_of_v != nullptr &&
@@ -319,11 +334,11 @@ void extendActivePath(
         }
 
         // Case 4: If blossom of u is an outer vertex we contract it.
-        if (struct_of_u != nullptr && struct_of_u->getGraphNodeFromVertex(edge.first)->isOuterVertex) {
+        if (struct_of_u != nullptr && struct_of_v != nullptr && struct_of_u->getGraphNodeFromVertex(edge.first)->isOuterVertex) {
             if (struct_of_u == struct_of_v) {
                 struct_of_u->contract(edge);
             } else {
-                augment(&disjoint_augmenting_paths, edge, available_free_nodes);
+                augment(disjoint_augmenting_paths, edge, available_free_nodes);
             }
         }
 
@@ -372,7 +387,7 @@ vector<vector<Edge>> algPhase(
             free_node_struct->modified = false;
         }
 
-        extendActivePath(stream, matching, &available_free_nodes, disjoint_augmenting_paths, removed_vertices);
+        extendActivePath(stream, matching, &available_free_nodes, &disjoint_augmenting_paths, removed_vertices);
         contractAndAugment(stream, &available_free_nodes, &disjoint_augmenting_paths);
         backtrackStuckStructures(&available_free_nodes);
     }
@@ -416,12 +431,19 @@ Matching algorithm(
 
     float scale_limit = (epsilon * epsilon) / 64;
 
-    for (float scale = 1.f/2.f; scale <= scale_limit; scale *= 1.f/2.f) {
+    for (float scale = 1.f/2.f; scale >= scale_limit; scale = scale * 1.f / 2.f) {
         float phase_limit = 144.f / (scale * epsilon);
 
         for (float phase = 1; phase <= phase_limit; phase++) {
+            std::cout << "Scale: " << scale << "/" << scale_limit << " Phase: " << phase << "/" << phase_limit << std::endl;
             vector<vector<Edge>> disjoint_augmenting_paths = algPhase(stream, &matching, epsilon, scale);
+            std::cout << matching << std::endl;
             matching.augmentMatching(&disjoint_augmenting_paths);
+            // for (Edge edge : disjoint_augmenting_paths[0]) {
+            //     std::cout << edge.first << "->" << edge.second << std::endl;
+            // }
+            std::cout << matching << std::endl;
+            exit(1);
         }
     }
 

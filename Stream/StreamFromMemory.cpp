@@ -23,6 +23,8 @@ StreamFromMemory::StreamFromMemory(string file_name) {
         int v2 = stoi(v2_text);
 
         lines.push_back(make_pair(v1, v2));
+        // TODO: testing both arcs?
+        lines.push_back(make_pair(v2, v1));
     }
 }
 

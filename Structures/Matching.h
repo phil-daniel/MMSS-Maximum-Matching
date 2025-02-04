@@ -21,6 +21,8 @@ class Matching {
         int getLabel(Edge edge);
         void setLabel(Edge edge, int label);
         friend std::ostream &operator<<(std::ostream &os, Matching &matching);
+    private:
+        Edge getStandardEdge(Edge edge);
 };
 
 #endif //MATCHING_H
