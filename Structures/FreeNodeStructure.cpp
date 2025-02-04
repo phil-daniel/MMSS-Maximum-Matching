@@ -121,7 +121,8 @@ void FreeNodeStructure::backtrack() {
 
     // Updating the working node to the previous outer vertex (i.e. parent of the parent of the current).
     GraphNode* new_working_node = working_node;
-    if (new_working_node->parent != nullptr) {
+    // TODO: Better handle inactive structures?
+    if (new_working_node != nullptr && new_working_node->parent != nullptr) {
         new_working_node = new_working_node->parent->parent;
     }
 

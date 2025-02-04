@@ -437,100 +437,11 @@ Matching algorithm(
         for (float phase = 1; phase <= phase_limit; phase++) {
             std::cout << "Scale: " << scale << "/" << scale_limit << " Phase: " << phase << "/" << phase_limit << std::endl;
             vector<vector<Edge>> disjoint_augmenting_paths = algPhase(stream, &matching, epsilon, scale);
-            std::cout << matching << std::endl;
             matching.augmentMatching(&disjoint_augmenting_paths);
-            // for (Edge edge : disjoint_augmenting_paths[0]) {
-            //     std::cout << edge.first << "->" << edge.second << std::endl;
-            // }
-            std::cout << matching << std::endl;
-            exit(1);
         }
     }
 
     return matching;
-}
-
-void testing() {
-    GraphVertex* zero = new GraphVertex(0);
-    GraphVertex* one = new GraphVertex(1);
-    GraphVertex* two = new GraphVertex(2);
-    GraphVertex* three = new GraphVertex(3);
-    GraphVertex* four = new GraphVertex(4);
-    GraphVertex* five = new GraphVertex(5);
-    GraphVertex* six = new GraphVertex(6);
-    GraphVertex* seven = new GraphVertex(7);
-    GraphVertex* eight = new GraphVertex(8);
-    GraphVertex* nine = new GraphVertex(9);
-
-    zero->children.insert(one);
-    one->parent = zero;
-    one->parent_index = 0;
-    zero->children.insert(two);
-    two->parent = zero;
-    one->children.insert(three);
-    three->parent = one;
-    three->parent_index = 3;
-    two->children.insert(four);
-    four->parent = two;
-    four->parent_index = 2;
-    three->children.insert(five);
-    five->parent = three;
-    five->parent_index = 3;
-    four->children.insert(six);
-    six->parent = four;
-    six->parent_index = 4;
-    five->children.insert(seven);
-    seven->parent = five;
-    seven->parent_index = 5;
-    six->children.insert(eight);
-    eight->parent = six;
-    eight->parent_index = 6;
-    seven->children.insert(nine);
-    nine->parent = seven;
-    nine->parent_index = 7;
-
-    AvailableFreeNodes available_free_nodes;
-    FreeNodeStructure* structure = available_free_nodes.createNewStruct(zero);
-
-    std::cout << *structure << std::endl;
-
-    // available_free_nodes.setFreeNodeStructFromVertex(0, structure);
-    // available_free_nodes.setFreeNodeStructFromVertex(1, structure);
-    // available_free_nodes.setFreeNodeStructFromVertex(2, structure);
-    // available_free_nodes.setFreeNodeStructFromVertex(3, structure);
-    // available_free_nodes.setFreeNodeStructFromVertex(4, structure);
-    // available_free_nodes.setFreeNodeStructFromVertex(5, structure);
-    // available_free_nodes.setFreeNodeStructFromVertex(6, structure);
-    // available_free_nodes.setFreeNodeStructFromVertex(7, structure);
-    // available_free_nodes.setFreeNodeStructFromVertex(8, structure);
-    // available_free_nodes.setFreeNodeStructFromVertex(9, structure);
-
-    // structure->free_node_root = zero;
-    // structure->working_node = nine;
-    //
-    // Matching matching;
-    // matching.addEdge(make_pair(0, 1));
-    // matching.addEdge(make_pair(3, 5));
-    // matching.addEdge(make_pair(7, 9));
-    // matching.setLabel(make_pair(0, 1), 1);
-    //
-    // updateChildLabels(zero, 4, &matching);
-
-    //std::cout << *structure << std::endl;
-    // std::cout << matching << std::endl;
-
-    // overtake(make_pair(4,5), make_pair(5,7), &available_free_nodes, &matching);
-    //
-    // std::cout << *structure << std::endl;
-    //
-    // vector<Edge> path = getLeafToRootPath(nine);
-    //
-    // for (int i = 0; i < path.size(); i++) {
-    //     std::cout << path[i].first << " -> " << path[i].second << std::endl;
-    // }
-    //
-    // available_free_nodes.deleteStructures();
-
 }
 
 int main() {
