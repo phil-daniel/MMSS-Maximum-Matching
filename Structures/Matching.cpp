@@ -9,9 +9,9 @@ Edge Matching::getStandardEdge(Edge edge) {
 }
 
 void Matching::augmentMatching(vector<vector<Edge>>* disjoint_augmenting_paths) {
+    // TODO: need to fix this augmentation, we are removing edges incorrectly
     for (vector<Edge> augmenting_path : (*disjoint_augmenting_paths)) {
         for (Edge edge : augmenting_path) {
-            std::cout << " " << edge.first << "->" << edge.second;
             // If the edge isn't in the matching, we add it to the matching.
             // Otherwise we remove it from the matching.
             Edge std_edge = getStandardEdge(edge);
@@ -21,7 +21,6 @@ void Matching::augmentMatching(vector<vector<Edge>>* disjoint_augmenting_paths) 
                 removeEdge(std_edge);
             }
         }
-        std::cout << std::endl;
     }
 }
 
@@ -33,6 +32,12 @@ void Matching::addEdge(Edge edge) {
 }
 
 void Matching::removeEdge(Edge edge) {
+    Edge std_edge = getStandardEdge(edge);
+    matched_edges.erase(std_edge);
+    matched_edge_to_label.erase(std_edge);
+}
+
+void Matching::removeEdgeAndItsVertices(Edge edge) {
     Edge std_edge = getStandardEdge(edge);
     matched_edges.erase(std_edge);
     matched_edge_to_label.erase(std_edge);

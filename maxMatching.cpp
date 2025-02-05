@@ -288,6 +288,7 @@ void extendActivePath(
         }
 
         // Case 1 - If we have "removed" one of the vertices from the graph, we skip this edge.
+        // TODO: Get rid of removed_vertices?
         if (
             removed_vertices.find(edge.first) != removed_vertices.end() ||
             removed_vertices.find(edge.second) != removed_vertices.end()
@@ -354,7 +355,8 @@ void extendActivePath(
             Edge matching_using_v = matching->getMatchedEdgeFromVertex(edge.second);
             int distance_to_v = matching->getLabel(matching_using_v);
 
-            if (distance_to_u + 1 < distance_to_v) {
+            // TODO: Move check of corrected matched edge somewhere else?
+            if (distance_to_u + 1 < distance_to_v && matching_using_v.first != -1) {
                 overtake(edge, matching_using_v, available_free_nodes, matching);
             }
         }
