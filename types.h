@@ -2,8 +2,9 @@
 #define TYPES_H
 
 // Required for hashing pairs
-#include <set>
 #include <boost/container_hash/hash.hpp>
+
+#include <set>
 
 using namespace std;
 

@@ -190,7 +190,7 @@ void overtake(
         vertex_t->parent = vertex_v;
         vertex_v->children.insert(vertex_t);
         struct_of_u->working_node->children.insert(vertex_v);
-        struct_of_u->working_node = vertex_v;
+        struct_of_u->working_node = vertex_t;
 
         vertex_v->isOuterVertex = ! vertex_v->parent->isOuterVertex;
         vertex_t->isOuterVertex = ! vertex_v->isOuterVertex;
@@ -338,7 +338,10 @@ void extendActivePath(
             if (struct_of_u == struct_of_v) {
                 struct_of_u->contract(edge);
             } else {
-                augment(disjoint_augmenting_paths, edge, available_free_nodes);
+                // TODO: Put this check in augment?
+                if (struct_of_v->getGraphNodeFromVertex(edge.second)->isOuterVertex) {
+                    augment(disjoint_augmenting_paths, edge, available_free_nodes);
+                }
             }
         }
 
@@ -428,6 +431,7 @@ Matching algorithm(
 ) {
 
     Matching matching = get2ApproximateMatching(stream);
+    std::cout << "2 approximation: " << matching.matched_edges.size() << std::endl;
 
     float scale_limit = (epsilon * epsilon) / 64;
 
@@ -448,7 +452,7 @@ Matching algorithm(
 int main() {
 
     //Stream* stream = new StreamFromFile("example.txt");
-    Stream* stream = new StreamFromMemory("example.txt");
+    Stream* stream = new StreamFromMemory("test_graph.txt");
 
     Matching matching = algorithm(stream, 0.1f);
     std::cout << matching << std::endl;

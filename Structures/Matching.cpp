@@ -11,6 +11,7 @@ Edge Matching::getStandardEdge(Edge edge) {
 void Matching::augmentMatching(vector<vector<Edge>>* disjoint_augmenting_paths) {
     for (vector<Edge> augmenting_path : (*disjoint_augmenting_paths)) {
         for (Edge edge : augmenting_path) {
+            std::cout << " " << edge.first << "->" << edge.second;
             // If the edge isn't in the matching, we add it to the matching.
             // Otherwise we remove it from the matching.
             Edge std_edge = getStandardEdge(edge);
@@ -20,6 +21,7 @@ void Matching::augmentMatching(vector<vector<Edge>>* disjoint_augmenting_paths) 
                 removeEdge(std_edge);
             }
         }
+        std::cout << std::endl;
     }
 }
 
@@ -80,7 +82,6 @@ void Matching::verifyMatching() {
     set<Vertex> used_vertices = {};
     for (Edge edge : matched_edges) {
         if (used_vertices.find(edge.first) != used_vertices.end()) {
-            std::cout << used_vertices.size() << std::endl;
             std::cout << "ERROR: Vertex " << edge.first << " already used" << std::endl;
             exit(1);
         }
