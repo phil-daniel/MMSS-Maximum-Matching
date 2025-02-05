@@ -17,12 +17,10 @@ void Matching::augmentMatching(vector<vector<Edge>>* disjoint_augmenting_paths) 
             if (matched_edges.find(std_edge) == matched_edges.end()) {
                 addEdge(std_edge);
             } else {
-                std::cout << "remove: " << edge.first << "->" << edge.second << std::endl;
                 removeEdge(std_edge);
             }
         }
     }
-    std::cout << "size " << disjoint_augmenting_paths->size() << std::endl;
 }
 
 void Matching::addEdge(Edge edge) {
@@ -77,6 +75,27 @@ void Matching::resetLabels() {
         matched_edge_to_label[edge] = numeric_limits<int>::max();
     }
 }
+
+void Matching::verifyMatching() {
+    set<Vertex> used_vertices = {};
+    for (Edge edge : matched_edges) {
+        if (used_vertices.find(edge.first) != used_vertices.end()) {
+            std::cout << used_vertices.size() << std::endl;
+            std::cout << "ERROR: Vertex " << edge.first << " already used" << std::endl;
+            exit(1);
+        }
+        if (used_vertices.find(edge.second) != used_vertices.end()) {
+            std::cout << "ERROR: Vertex " << edge.second << " already used" << std::endl;
+            exit(1);
+        }
+
+        used_vertices.insert(edge.first);
+        used_vertices.insert(edge.second);
+    }
+
+    std::cout << "Matching verified, size: " << matched_edges.size() << std::endl;
+}
+
 
 std::ostream &operator<<(std::ostream &os, Matching &matching) {
     os << "Matching:\n\t(Matched edge) : Label";

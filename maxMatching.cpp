@@ -438,6 +438,7 @@ Matching algorithm(
             std::cout << "Scale: " << scale << "/" << scale_limit << " Phase: " << phase << "/" << phase_limit << std::endl;
             vector<vector<Edge>> disjoint_augmenting_paths = algPhase(stream, &matching, epsilon, scale);
             matching.augmentMatching(&disjoint_augmenting_paths);
+            matching.verifyMatching();
         }
     }
 

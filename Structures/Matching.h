@@ -20,6 +20,7 @@ class Matching {
         Edge getMatchedEdgeFromVertex(Vertex vertex);
         int getLabel(Edge edge);
         void setLabel(Edge edge, int label);
+        void verifyMatching();
         friend std::ostream &operator<<(std::ostream &os, Matching &matching);
     private:
         Edge getStandardEdge(Edge edge);
