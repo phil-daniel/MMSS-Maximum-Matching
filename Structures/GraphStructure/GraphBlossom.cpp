@@ -12,9 +12,9 @@ void GraphBlossom::addGraphNodeToBlossom(GraphNode* node) {
     // Adding each vertex index present in the blossom into the set verticesInBlossom
     if (node->isBlossom) {
         GraphBlossom* node_blossom = dynamic_cast<GraphBlossom *>(node);
-        verticesInBlossom.insert(
-            node_blossom->verticesInBlossom.begin(), node_blossom->verticesInBlossom.end()
-        );
+        for (Vertex vertex : node_blossom->verticesInBlossom) {
+            verticesInBlossom.insert(vertex);
+        }
     } else {
         GraphVertex* node_vertex = dynamic_cast<GraphVertex *>(node);
         verticesInBlossom.insert(node_vertex->vertex_id);

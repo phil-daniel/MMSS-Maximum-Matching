@@ -23,6 +23,7 @@ void FreeNodeStructure::removeVertexFromStruct(Vertex vertex) {
 void FreeNodeStructure::contract(
     Edge unmatched_arc
 ) {
+    std::cout << "Contract" << std::endl;
     GraphNode* node_of_u = getGraphNodeFromVertex(unmatched_arc.first);
     GraphNode* node_of_v = getGraphNodeFromVertex(unmatched_arc.second);
 
@@ -42,12 +43,11 @@ void FreeNodeStructure::contract(
     while (current_pos != nullptr && u_to_root_path.find(current_pos) == u_to_root_path.end()) {
         current_pos = current_pos->parent;
     }
-
     // current_pos now holds the LCA of u and v.
     GraphNode* lca = current_pos;
-    // TODO: need to link children to blossom
+
     GraphBlossom* new_blossom = new GraphBlossom();
-    new_blossom->nodesInBlossom.insert(lca);
+    new_blossom->addGraphNodeToBlossom(lca);
     if (lca->isBlossom) {
         GraphBlossom* blossom_node = dynamic_cast<GraphBlossom*>(lca);
         for (Vertex vertex : blossom_node->verticesInBlossom) {
@@ -56,8 +56,11 @@ void FreeNodeStructure::contract(
     } else {
         addVertexToStruct(lca->vertex_id, new_blossom);
     }
+    if (lca == working_node) {
+        working_node = new_blossom;
+    }
     current_pos = node_of_v;
-    while (current_pos != lca && current_pos != nullptr) {
+    while (current_pos != lca && current_pos != nullptr && current_pos != new_blossom) {
         new_blossom->addGraphNodeToBlossom(current_pos);
 
         if (current_pos->isBlossom) {
@@ -69,10 +72,14 @@ void FreeNodeStructure::contract(
             addVertexToStruct(current_pos->vertex_id, new_blossom);
         }
 
+        if (current_pos == working_node) {
+            working_node = new_blossom;
+        }
+
         current_pos = current_pos->parent;
     }
     current_pos = node_of_u;
-    while (current_pos != lca && current_pos != nullptr) {
+    while (current_pos != lca && current_pos != nullptr && current_pos != new_blossom) {
         new_blossom->addGraphNodeToBlossom(current_pos);
 
         if (current_pos->isBlossom) {
@@ -82,6 +89,10 @@ void FreeNodeStructure::contract(
             }
         } else {
             addVertexToStruct(current_pos->vertex_id, new_blossom);
+        }
+
+        if (current_pos == working_node) {
+            working_node = new_blossom;
         }
 
         current_pos = current_pos->parent;
