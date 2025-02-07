@@ -121,7 +121,6 @@ void contractAndAugment(
             if (node_of_u != node_of_v) {
                 // We now know they aren't part of the same blossom -> we don't need to contract if it's already a blossom
                 if (node_of_u->isOuterVertex && node_of_v->isOuterVertex) {
-                    // Contract
                     struct_of_u->contract(edge);
                 }
             }
@@ -180,6 +179,9 @@ void overtake(
         // If the edge doesn't exist them getMatchedEdgeFromVertex will return (-1,-1)
         current_label = matching->getLabel(matched_arc_using_u);
     }
+    if (unmatched_arc.second != matched_arc.first) {
+        matched_arc = make_pair(matched_arc.second, matched_arc.first);
+    }
     // TODO: needs nullptr check and merge with below
 
     // Case 1: Our matched_arc is not currently in a structure
@@ -187,7 +189,9 @@ void overtake(
         GraphVertex* vertex_v = new GraphVertex(unmatched_arc.second);
         GraphVertex* vertex_t = new GraphVertex(matched_arc.second);
         vertex_v->parent = struct_of_u->working_node;
+        vertex_v->parent_index = unmatched_arc.first;
         vertex_t->parent = vertex_v;
+        vertex_t->parent_index = matched_arc.first;
         vertex_v->children.insert(vertex_t);
         struct_of_u->working_node->children.insert(vertex_v);
         struct_of_u->working_node = vertex_t;
@@ -217,6 +221,7 @@ void overtake(
             // Updating vertex v to now be parented by vertex u
             vertex_u->children.insert(vertex_v);
             vertex_v->parent = vertex_u;
+            vertex_v->parent_index = unmatched_arc.first;
 
             // Updating the working vertex
             struct_of_t->working_node = vertex_t;
@@ -336,8 +341,16 @@ void extendActivePath(
 
         // Case 4: If blossom of u is an outer vertex we contract it.
         if (struct_of_u != nullptr && struct_of_v != nullptr && struct_of_u->getGraphNodeFromVertex(edge.first)->isOuterVertex) {
+            // TODO: Add more checks here.
             if (struct_of_u == struct_of_v) {
-                struct_of_u->contract(edge);
+                // in the same structure
+                if (struct_of_u->getGraphNodeFromVertex(edge.first) != struct_of_u->getGraphNodeFromVertex(edge.second)) {
+                    // are not the same node
+                    if (struct_of_v->getGraphNodeFromVertex(edge.second)->isOuterVertex) {
+                        // both are outer vertices
+                        struct_of_u->contract(edge);
+                    }
+                }
             } else {
                 // TODO: Put this check in augment?
                 if (struct_of_v->getGraphNodeFromVertex(edge.second)->isOuterVertex) {
@@ -443,6 +456,13 @@ Matching algorithm(
         for (float phase = 1; phase <= phase_limit; phase++) {
             std::cout << "Scale: " << scale << "/" << scale_limit << " Phase: " << phase << "/" << phase_limit << std::endl;
             vector<vector<Edge>> disjoint_augmenting_paths = algPhase(stream, &matching, epsilon, scale);
+            for (vector<Edge> path : disjoint_augmenting_paths) {
+                std::cout << "Path: ";
+                for (Edge edge : path) {
+                    std::cout << edge.first << "->" << edge.second << " ";
+                }
+                std::cout << std::endl;
+            }
             matching.augmentMatching(&disjoint_augmenting_paths);
             matching.verifyMatching();
         }

@@ -23,7 +23,6 @@ void FreeNodeStructure::removeVertexFromStruct(Vertex vertex) {
 void FreeNodeStructure::contract(
     Edge unmatched_arc
 ) {
-    std::cout << "Contract" << std::endl;
     GraphNode* node_of_u = getGraphNodeFromVertex(unmatched_arc.first);
     GraphNode* node_of_v = getGraphNodeFromVertex(unmatched_arc.second);
 
@@ -59,9 +58,13 @@ void FreeNodeStructure::contract(
     if (lca == working_node) {
         working_node = new_blossom;
     }
+
     current_pos = node_of_v;
+    new_blossom->verticesInOrder.emplace_back(unmatched_arc.second);
     while (current_pos != lca && current_pos != nullptr && current_pos != new_blossom) {
         new_blossom->addGraphNodeToBlossom(current_pos);
+        new_blossom->nodesInOrder.emplace_back(current_pos);
+        new_blossom->verticesInOrder.emplace_back(current_pos->parent_index);
 
         if (current_pos->isBlossom) {
             GraphBlossom* blossom_node = dynamic_cast<GraphBlossom*>(current_pos);
@@ -79,24 +82,44 @@ void FreeNodeStructure::contract(
         current_pos = current_pos->parent;
     }
     current_pos = node_of_u;
-    while (current_pos != lca && current_pos != nullptr && current_pos != new_blossom) {
-        new_blossom->addGraphNodeToBlossom(current_pos);
 
-        if (current_pos->isBlossom) {
-            GraphBlossom* blossom_node = dynamic_cast<GraphBlossom*>(current_pos);
+    new_blossom->nodesInOrder.emplace_back(lca);
+
+    // Removing the index of LCA from the verticesInOrder so we don't add it twice.
+    new_blossom->verticesInOrder.pop_back();
+
+    // Reversing the list, this is so we can get the cycle stored
+    stack<GraphNode*> lca_to_u_path;
+    while (current_pos != lca && current_pos != nullptr && current_pos != new_blossom) {
+        lca_to_u_path.push(current_pos);
+
+        current_pos = current_pos->parent;
+    }
+
+    while (!lca_to_u_path.empty()) {
+        GraphNode* node = lca_to_u_path.top();
+
+        new_blossom->addGraphNodeToBlossom(node);
+        new_blossom->nodesInOrder.emplace_back(node);
+        new_blossom->verticesInOrder.emplace_back(node->parent_index);
+
+        if (node->isBlossom) {
+            GraphBlossom* blossom_node = dynamic_cast<GraphBlossom*>(node);
             for (Vertex vertex : blossom_node->verticesInBlossom) {
                 addVertexToStruct(vertex, new_blossom);
             }
         } else {
-            addVertexToStruct(current_pos->vertex_id, new_blossom);
+            addVertexToStruct(node->vertex_id, new_blossom);
         }
 
-        if (current_pos == working_node) {
+        if (node == working_node) {
             working_node = new_blossom;
         }
 
-        current_pos = current_pos->parent;
+        lca_to_u_path.pop();
     }
+
+    new_blossom->verticesInOrder.emplace_back(unmatched_arc.first);
 
     new_blossom->parent = lca->parent;
     new_blossom->parent_index = lca->parent_index;

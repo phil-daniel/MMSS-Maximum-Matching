@@ -10,5 +10,6 @@ using namespace std;
 
 typedef int Vertex;
 typedef pair<Vertex, Vertex> Edge;
+typedef pair<vector<Edge>, vector<Edge>> AugmentingPath;
 
 #endif //TYPES_H
