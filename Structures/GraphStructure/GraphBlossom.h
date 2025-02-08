@@ -6,8 +6,6 @@
 #include "GraphNode.h"
 #include "../Matching.h"
 
-class Matching;
-
 class GraphBlossom : public GraphNode {
     // Variables
     public:
@@ -32,7 +30,13 @@ class GraphBlossom : public GraphNode {
         explicit GraphBlossom();
         void addGraphNodeToBlossom(GraphNode* node);
         void deleteContents();
-        AugmentingPath getBlossomAugmentation(Vertex from_matched, Vertex from_unmatched, Matching* matching);
+        AugmentingPath getBlossomAugmentation(
+            GraphNode* incoming_matched_node,
+            Vertex incoming_matched_vertex,
+            GraphNode* incoming_unmatched_node,
+            Vertex incoming_unmatched_vertex,
+            Matching* matching
+        );
         friend std::ostream &operator<<(std::ostream &os, const GraphBlossom &blossom);
 };
 
