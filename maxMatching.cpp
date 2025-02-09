@@ -129,9 +129,9 @@ AugmentingPath getAugmentation(
             }
 
 
-            Vertex inside_to_match = blossom->getOutsideBlossomToInValue(from_matched_node);
+            Vertex inside_to_match = blossom->getVertexInsideConnectedByEdge(from_matched_node);
             if (inside_to_match == -1) inside_to_match = vertex_in_u_joining;
-            Vertex inside_to_unmatch = blossom->getOutsideBlossomToInValue(from_unmatched_node);
+            Vertex inside_to_unmatch = blossom->getVertexInsideConnectedByEdge(from_unmatched_node);
             if (inside_to_unmatch == -1) inside_to_unmatch = vertex_in_u_joining;
 
             AugmentingPath blossom_augmentation = blossom->getBlossomAugmentation(
@@ -158,8 +158,10 @@ AugmentingPath getAugmentation(
             Edge new_edge = make_pair(prev_vertex, curr_node->vertex_id);
 
             if (match_this_edge) {
+                std::cout << "9: " << new_edge.first << "->" << new_edge.second << std::endl;
                 to_match.emplace_back(new_edge);
             } else {
+                std::cout << "10: " << new_edge.first << "->" << new_edge.second << std::endl;
                 to_unmatch.emplace_back(new_edge);
             }
 
@@ -209,9 +211,9 @@ AugmentingPath getAugmentation(
                 from_unmatched_vertex = temp_vertex;
             }
 
-            Vertex inside_to_match = blossom->getOutsideBlossomToInValue(from_matched_node);
+            Vertex inside_to_match = blossom->getVertexInsideConnectedByEdge(from_matched_node);
             if (inside_to_match == -1) inside_to_match = vertex_in_v_joining;
-            Vertex inside_to_unmatch = blossom->getOutsideBlossomToInValue(from_unmatched_node);
+            Vertex inside_to_unmatch = blossom->getVertexInsideConnectedByEdge(from_unmatched_node);
             if (inside_to_unmatch == -1) inside_to_unmatch = vertex_in_v_joining;
 
             AugmentingPath blossom_augmentation = blossom->getBlossomAugmentation(
@@ -238,8 +240,10 @@ AugmentingPath getAugmentation(
             Edge new_edge = make_pair(prev_vertex, curr_node->vertex_id);
 
             if (match_this_edge) {
+                std::cout << "11: " << new_edge.first << "->" << new_edge.second << std::endl;
                 to_match.emplace_back(new_edge);
             } else {
+                std::cout << "12: " << new_edge.first << "->" << new_edge.second << std::endl;
                 to_unmatch.emplace_back(new_edge);
             }
 
@@ -666,6 +670,7 @@ Matching algorithm(
 
     Matching matching = get2ApproximateMatching(stream);
     std::cout << "2 approximation: " << matching.matched_edges.size() << std::endl;
+    std::cout << matching << std::endl;
 
     float scale_limit = (epsilon * epsilon) / 64;
 

@@ -5,6 +5,10 @@ GraphVertex::GraphVertex(Vertex vertex_id) {
     this->vertex_id = vertex_id;
 }
 
+Vertex GraphVertex::getVertexInsideConnectedByEdge(GraphNode* node){
+    return vertex_id;
+}
+
 void GraphVertex::print(std::ostream& os) const {
     os << "Vertex " << vertex_id;
 }

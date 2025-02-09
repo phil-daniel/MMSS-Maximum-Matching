@@ -19,6 +19,7 @@ class GraphVertex : public GraphNode {
         void print(std::ostream& os) const override;
     public:
         explicit GraphVertex(Vertex vertex_id);
+        Vertex getVertexInsideConnectedByEdge(GraphNode* node) override;
         friend std::ostream &operator<<(std::ostream &os, const GraphVertex &vertex);
 };
 

@@ -8,7 +8,7 @@ GraphBlossom::GraphBlossom() {
     isBlossom = true;
 }
 
-Vertex GraphBlossom::getOutsideBlossomToInValue(GraphNode* node) {
+Vertex GraphBlossom::getVertexInsideConnectedByEdge(GraphNode* node) {
     if (outsideBlossomToIn.find(node) == outsideBlossomToIn.end()) {
         return -1;
     }
@@ -34,10 +34,11 @@ void GraphBlossom::addGraphNodeToBlossom(GraphNode* node) {
             verticesInBlossom.insert(vertex);
         }
 
+        // TODO: might want to clean up inserting into outsideBlossomToIn, i.e if the key is already in the blossom its not needed.
+
         outsideBlossomToIn.insert(node_blossom->outsideBlossomToIn.begin(), node_blossom->outsideBlossomToIn.end());
     } else {
-        GraphVertex* node_vertex = dynamic_cast<GraphVertex *>(node);
-        verticesInBlossom.insert(node_vertex->vertex_id);
+        verticesInBlossom.insert(node->vertex_id);
     }
 
     for (GraphNode* child_node : node->children) {
@@ -81,15 +82,29 @@ AugmentingPath GraphBlossom::getBlossomAugmentation(
     vector<Edge> to_match;
     vector<Edge> to_unmatch;
 
-    // Finding the position in the nodesInOrder and verticesInOrder array of our nodes.
+    // Finding which node corresponds to the incoming to_be_matched and to_be_unmatched edges.
+    GraphNode* in_blossom_matched_node = nodeOfVertexInBlossom[in_blossom_matched];
+    GraphNode* in_blossom_unmatched_node = nodeOfVertexInBlossom[in_blossom_unmatched];
+
+    // Finding the position in the nodesInOrder and nodesInOrder array of our nodes.
     int from_matched_pos = 0, from_unmatched_pos = 0;
-    for (int i = 0; i < verticesInOrder.size(); i++) {
-        if (verticesInOrder[i] == in_blossom_matched) from_matched_pos = i;
-        if (verticesInOrder[i] == in_blossom_unmatched) from_unmatched_pos = i;
+    for (int i = 0; i < nodesInOrder.size(); i++) {
+        if (nodesInOrder[i] == in_blossom_matched_node) from_matched_pos = i;
+        if (nodesInOrder[i] == in_blossom_unmatched_node) from_unmatched_pos = i;
     }
 
-    Edge forwards_edge = make_pair(verticesInOrder[(from_matched_pos)], verticesInOrder[(from_matched_pos+1) % verticesInOrder.size()]);
-    Edge backwards_edge = make_pair(verticesInOrder[(from_matched_pos)], verticesInOrder[(from_matched_pos-1 + verticesInOrder.size()) % verticesInOrder.size()]);
+    int matched_pos_plus_one = (from_matched_pos+1) % nodesInOrder.size();
+    int matched_pos_minus_one = (from_matched_pos-1 + nodesInOrder.size()) % nodesInOrder.size();
+
+    Vertex matched_pos_plus_one_vertex = nodesInOrder[matched_pos_plus_one]->getVertexInsideConnectedByEdge(nodesInOrder[from_matched_pos]);
+    Vertex matched_pos_minus_one_vertex = nodesInOrder[matched_pos_minus_one]->getVertexInsideConnectedByEdge(nodesInOrder[from_matched_pos]);
+
+    // If our start node is a blossom, we need to find the correct vertices in and out of the blossom for the forward and backwards edges.
+    Vertex forwards_start_edge_vertex = nodesInOrder[from_matched_pos]->getVertexInsideConnectedByEdge(nodesInOrder[matched_pos_plus_one]);
+    Vertex backwards_start_edge_vertex = nodesInOrder[from_matched_pos]->getVertexInsideConnectedByEdge(nodesInOrder[matched_pos_minus_one]);
+
+    Edge forwards_edge = make_pair(forwards_start_edge_vertex, matched_pos_plus_one_vertex);
+    Edge backwards_edge = make_pair(backwards_start_edge_vertex, matched_pos_minus_one_vertex);
     if (! (matching->isInMatching(forwards_edge) || matching->isInMatching(backwards_edge))) {
         return {{}, {}};
     }
@@ -100,7 +115,6 @@ AugmentingPath GraphBlossom::getBlossomAugmentation(
     int direction = -1;
     // We will check whether this edge is matched to decide which direction we will cycle through the array.
     // Using modulus to prevent overflow.
-    // TODO: eventually get rid of using verticesInOrder in favour of the dictionary vertexToNodeInBlossom
 
     // Handling direction
     if (matching->isInMatching(forwards_edge)) {
@@ -111,23 +125,22 @@ AugmentingPath GraphBlossom::getBlossomAugmentation(
     int current_pos = from_matched_pos;
 
     bool add_to_matching = false;
-    vector<Edge> edges_to_match, edges_to_unmatch;
 
     // Handling if the first node is a blossom and we have to add the nodes in the matching into the blossom.
     if (nodesInOrder[current_pos]->isBlossom) {
         GraphBlossom* blossom = dynamic_cast<GraphBlossom *>(nodesInOrder[current_pos]);
 
-        int next_pos = (current_pos + direction + verticesInOrder.size()) % verticesInOrder.size();
+        int next_pos = (current_pos + direction + nodesInOrder.size()) % nodesInOrder.size();
 
         Vertex inside_blossom_to_match = in_blossom_matched;
-        Vertex inside_blossom_to_unmatch = blossom->getOutsideBlossomToInValue(nodesInOrder[next_pos]);
+        Vertex inside_blossom_to_unmatch = blossom->getVertexInsideConnectedByEdge(nodesInOrder[next_pos]);
 
         AugmentingPath inner_augmentation = blossom->getBlossomAugmentation(
             incoming_matched_node,
             incoming_matched_vertex,
             inside_blossom_to_match,
             nodesInOrder[next_pos],
-            verticesInOrder[next_pos],
+            nodesInOrder[next_pos]->getVertexInsideConnectedByEdge(nodesInOrder[current_pos]),
             inside_blossom_to_unmatch,
             matching
         );
@@ -142,46 +155,52 @@ AugmentingPath GraphBlossom::getBlossomAugmentation(
     if (incoming_matched_vertex == incoming_unmatched_vertex) {
         // Adding one less edge, which we add back at the end
         // this prevents us from adding the blossom multiple times if incoming_matched_vertex/incoming_unmatched_vertex is a blossom.
-        from_unmatched_pos = (from_unmatched_pos - direction + verticesInOrder.size()) % verticesInOrder.size();
+        from_unmatched_pos = (from_unmatched_pos - direction + nodesInOrder.size()) % nodesInOrder.size();
     }
 
     while (current_pos != from_unmatched_pos) {
 
-        // Adding overflow protection using verticesInOrder.size() being added/modulus-ed.
-        int next_pos = (current_pos + direction + verticesInOrder.size()) % verticesInOrder.size();
+        // Adding overflow protection using nodesInOrder.size() being added/modulus-ed.
+        int next_pos = (current_pos + direction + nodesInOrder.size()) % nodesInOrder.size();
+
+        GraphNode* curr_node = nodesInOrder[current_pos];
+        GraphNode* next_node = nodesInOrder[next_pos];
+
+        Vertex curr_vertex_from_next_node = curr_node->getVertexInsideConnectedByEdge(next_node);
+        Vertex next_vertex_from_curr_node = next_node->getVertexInsideConnectedByEdge(curr_node);
 
         if (add_to_matching) {
-            to_match.emplace_back(verticesInOrder[current_pos], verticesInOrder[next_pos]);
+            to_match.emplace_back(curr_vertex_from_next_node, next_vertex_from_curr_node);
         } else {
-            to_unmatch.emplace_back(verticesInOrder[current_pos], verticesInOrder[next_pos]);
+            to_unmatch.emplace_back(curr_vertex_from_next_node, next_vertex_from_curr_node);
         }
 
         if (nodesInOrder[next_pos]->isBlossom) {
 
             GraphBlossom* blossom = dynamic_cast<GraphBlossom *>(nodesInOrder[next_pos]);
 
-            int next_next_pos = (next_pos + direction + verticesInOrder.size()) % verticesInOrder.size();
+            int next_next_pos = (next_pos + direction + nodesInOrder.size()) % nodesInOrder.size();
 
             // "How do we get into this blossom from GraphNode x"
-            Vertex vertex_in_blossom_connected_with_curr_pos = blossom->getOutsideBlossomToInValue(nodesInOrder[current_pos]);
-            Vertex vertex_in_blossom_connected_with_next_next_pos = blossom->getOutsideBlossomToInValue(nodesInOrder[next_next_pos]);
+            Vertex vertex_in_blossom_connected_with_curr_pos = blossom->getVertexInsideConnectedByEdge(nodesInOrder[current_pos]);
+            Vertex vertex_in_blossom_connected_with_next_next_pos = blossom->getVertexInsideConnectedByEdge(nodesInOrder[next_next_pos]);
 
-            Vertex from_matched_vertex = verticesInOrder[current_pos];
-            Vertex from_unmatched_vertex = verticesInOrder[next_next_pos];
-            Vertex inside_to_match = vertex_in_blossom_connected_with_curr_pos;
-            Vertex inside_to_unmatch = vertex_in_blossom_connected_with_next_next_pos;
             GraphNode* from_matched_node = nodesInOrder[current_pos];
             GraphNode* from_unmatched_node = nodesInOrder[next_next_pos];
+            Vertex inside_to_match = vertex_in_blossom_connected_with_curr_pos;
+            Vertex inside_to_unmatch = vertex_in_blossom_connected_with_next_next_pos;
+
             if (! add_to_matching) {
                 // If the current edge is matched, and we want to set it to unmatched,
                 // we want the edge after it in the blossom to be unmatched.
-                from_matched_vertex = verticesInOrder[next_next_pos];
-                from_unmatched_vertex = verticesInOrder[current_pos];
                 from_matched_node = nodesInOrder[next_next_pos];
                 from_unmatched_node = nodesInOrder[current_pos];
                 inside_to_match = vertex_in_blossom_connected_with_next_next_pos;
                 inside_to_unmatch = vertex_in_blossom_connected_with_curr_pos;
             }
+
+            Vertex from_matched_vertex = from_matched_node->getVertexInsideConnectedByEdge(blossom);
+            Vertex from_unmatched_vertex = from_unmatched_node->getVertexInsideConnectedByEdge(blossom);
 
             // TODO: Ensure this is correct
             // Handling if final node is in a blossom
@@ -213,12 +232,15 @@ AugmentingPath GraphBlossom::getBlossomAugmentation(
 
     if (incoming_matched_vertex == incoming_unmatched_vertex) {
         // Readding the edge we removed from the loop previously
-        to_unmatch.emplace_back(verticesInOrder[from_unmatched_pos], verticesInOrder[from_matched_pos]);
+        Vertex matched_pos_vertex = nodesInOrder[from_matched_pos]->getVertexInsideConnectedByEdge(nodesInOrder[from_unmatched_pos]);
+        Vertex unmatched_pos_vertex = nodesInOrder[from_unmatched_pos]->getVertexInsideConnectedByEdge(nodesInOrder[from_matched_pos]);
+        to_unmatch.emplace_back(matched_pos_vertex, unmatched_pos_vertex);
     } else {
         // Only need to add this edge if we aren't entering and exitting from the same node.
-        to_unmatch.emplace_back(incoming_unmatched_vertex, verticesInOrder[from_unmatched_pos]);
+        Vertex vertex_connected_to_incoming_unmatched = nodesInOrder[from_unmatched_pos]->getVertexInsideConnectedByEdge(incoming_unmatched_node);
+        to_unmatch.emplace_back(incoming_unmatched_vertex, vertex_connected_to_incoming_unmatched);
     }
-    to_match.emplace_back(incoming_matched_vertex, verticesInOrder[from_matched_pos]);
+    to_match.emplace_back(incoming_matched_vertex, in_blossom_matched);
 
     return {to_match, to_unmatch};
 }
