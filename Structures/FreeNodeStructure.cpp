@@ -55,9 +55,6 @@ void FreeNodeStructure::contract(
     } else {
         addVertexToStruct(lca->vertex_id, new_blossom);
     }
-    if (lca == working_node) {
-        working_node = new_blossom;
-    }
 
     current_pos = node_of_v;
     new_blossom->verticesInOrder.emplace_back(unmatched_arc.second);
@@ -136,6 +133,10 @@ void FreeNodeStructure::contract(
     // Updating vertex_to_graph_node to link all of the vertices in the blossom to the new GraphBlossom structure.
     for (Vertex vertex_id : new_blossom->verticesInBlossom) {
         vertex_to_graph_node[vertex_id] = new_blossom;
+    }
+
+    if (new_blossom->nodesInBlossom.find(working_node) != new_blossom->nodesInBlossom.end()) {
+        working_node = new_blossom;
     }
 
     // Settings whether this node is an inner or outer node.

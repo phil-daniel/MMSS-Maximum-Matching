@@ -12,7 +12,7 @@ class Matching {
 
     // Functions
     public:
-        void augmentMatching(vector<vector<Edge>>* disjoint_augmenting_paths);
+        void augmentMatching(vector<AugmentingPath>* disjoint_augmenting_paths);
         void resetLabels();
         void addEdge(Edge edge);
         void removeEdge(Edge edge);

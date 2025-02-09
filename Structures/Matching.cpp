@@ -8,18 +8,14 @@ Edge Matching::getStandardEdge(Edge edge) {
     return Edge(min, max);
 }
 
-void Matching::augmentMatching(vector<vector<Edge>>* disjoint_augmenting_paths) {
+void Matching::augmentMatching(vector<AugmentingPath>* disjoint_augmenting_paths) {
     // TODO: need to fix this augmentation, we are removing edges incorrectly
-    for (vector<Edge> augmenting_path : (*disjoint_augmenting_paths)) {
-        for (Edge edge : augmenting_path) {
-            // If the edge isn't in the matching, we add it to the matching.
-            // Otherwise we remove it from the matching.
-            Edge std_edge = getStandardEdge(edge);
-            if (matched_edges.find(std_edge) == matched_edges.end()) {
-                addEdge(std_edge);
-            } else {
-                removeEdge(std_edge);
-            }
+    for (AugmentingPath augmenting_path : (*disjoint_augmenting_paths)) {
+        for (Edge edge : augmenting_path.first) {
+            addEdge(edge);
+        }
+        for (Edge edge : augmenting_path.second) {
+            removeEdge(edge);
         }
     }
 }

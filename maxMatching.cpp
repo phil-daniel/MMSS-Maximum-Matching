@@ -73,6 +73,9 @@ AugmentingPath getAugmentation(
     Vertex vertex_in_v_joining,
     Matching* matching
 ) {
+
+    std::cout << "AUGMENTING EDGE: " << vertex_in_u_joining << "->" << vertex_in_v_joining << std::endl;
+
     vector<Edge> to_match;
     vector<Edge> to_unmatch;
 
@@ -116,18 +119,31 @@ AugmentingPath getAugmentation(
                 from_unmatched_vertex = curr_node->parent_index;
             }
 
-            // TODO: Need to set these
-            if (match_this_edge) {
+            // TODO: Need to check this is correct
+            if (!match_this_edge) {
+                GraphNode* temp_node = from_matched_node;
+                from_matched_node = from_unmatched_node;
+                from_unmatched_node = temp_node;
 
-            } else {
-
+                Vertex temp_vertex = from_matched_vertex;
+                from_matched_vertex = from_unmatched_vertex;
+                from_unmatched_vertex = temp_vertex;
             }
 
+
+            Vertex inside_to_match = blossom->getOutsideBlossomToInValue(from_matched_node);
+            if (inside_to_match == -1) inside_to_match = vertex_in_u_joining;
+            Vertex inside_to_unmatch = blossom->getOutsideBlossomToInValue(from_unmatched_node);
+            if (inside_to_unmatch == -1) inside_to_unmatch = vertex_in_u_joining;
+
+            std::cout << "New" << std::endl;
             AugmentingPath blossom_augmentation = blossom->getBlossomAugmentation(
                 from_matched_node,
                 from_matched_vertex,
+                inside_to_match,
                 from_unmatched_node,
                 from_unmatched_vertex,
+                inside_to_unmatch,
                 matching
             );
 
@@ -137,7 +153,10 @@ AugmentingPath getAugmentation(
             for (Edge edge : blossom_augmentation.second) {
                 to_unmatch.emplace_back(edge);
             }
-            
+
+            prev_node = curr_node;
+            prev_vertex = curr_node->vertex_id;
+
         } else {
             Edge new_edge = make_pair(prev_vertex, curr_node->vertex_id);
 
@@ -156,45 +175,115 @@ AugmentingPath getAugmentation(
         pos += 1;
     }
 
+    // Doing the same thing in struct of v
+
+    prev_node = node_in_struct_u;
+    prev_vertex = vertex_in_u_joining;
+    match_this_edge = true;
+    pos = 0;
+
+    while (pos < node_to_v_root.size()) {
+        curr_node = node_to_v_root[pos];
+        if (curr_node->isBlossom) {
+            GraphBlossom* blossom = dynamic_cast<GraphBlossom*>(curr_node);
+
+            GraphNode* from_matched_node = prev_node;
+            Vertex from_matched_vertex = prev_vertex;
+            GraphNode* from_unmatched_node;
+            Vertex from_unmatched_vertex;
+            // Checking if we've reached the end of the augmenting path
+            if (pos == node_to_u_root.size() - 1) {
+                from_unmatched_node = from_matched_node;
+                from_unmatched_vertex = from_matched_vertex;
+            } else {
+                from_unmatched_node = node_to_u_root[pos + 1];
+                // TODO: Check that parent index works
+                from_unmatched_vertex = curr_node->parent_index;
+            }
+
+            // TODO: Need to check this is correct
+            if (!match_this_edge) {
+                GraphNode* temp_node = from_matched_node;
+                from_matched_node = from_unmatched_node;
+                from_unmatched_node = temp_node;
+
+                Vertex temp_vertex = from_matched_vertex;
+                from_matched_vertex = from_unmatched_vertex;
+                from_unmatched_vertex = temp_vertex;
+            }
+
+            Vertex inside_to_match = blossom->getOutsideBlossomToInValue(from_matched_node);
+            if (inside_to_match == -1) inside_to_match = vertex_in_v_joining;
+            Vertex inside_to_unmatch = blossom->getOutsideBlossomToInValue(from_unmatched_node);
+            if (inside_to_unmatch == -1) inside_to_unmatch = vertex_in_v_joining;
+
+            std::cout << "New" << std::endl;
+            AugmentingPath blossom_augmentation = blossom->getBlossomAugmentation(
+                from_matched_node,
+                from_matched_vertex,
+                inside_to_match,
+                from_unmatched_node,
+                from_unmatched_vertex,
+                inside_to_unmatch,
+                matching
+            );
+
+            for (Edge edge : blossom_augmentation.first) {
+                to_match.emplace_back(edge);
+            }
+            for (Edge edge : blossom_augmentation.second) {
+                to_unmatch.emplace_back(edge);
+            }
+
+            prev_node = curr_node;
+            prev_vertex = curr_node->vertex_id;
+
+        } else {
+            Edge new_edge = make_pair(prev_vertex, curr_node->vertex_id);
+
+            if (match_this_edge) {
+                to_match.emplace_back(new_edge);
+            } else {
+                to_unmatch.emplace_back(new_edge);
+            }
+
+            prev_node = curr_node;
+            prev_vertex = curr_node->vertex_id;
+        }
+
+        // TODO: might need to pos += 2 for blossoms?
+        match_this_edge = ! match_this_edge;
+        pos += 1;
+    }
+
+    return {to_match, to_unmatch};
 }
 
 void augment(
-    vector<vector<Edge>>* disjoint_augmenting_paths,
+    vector<AugmentingPath>* disjoint_augmenting_paths,
     Edge unmatched_arc,
-    AvailableFreeNodes* available_free_nodes
+    AvailableFreeNodes* available_free_nodes,
+    Matching* matching
 ) {
     FreeNodeStructure* struct_of_u = available_free_nodes->getFreeNodeStructFromVertex(unmatched_arc.first);
     FreeNodeStructure* struct_of_v = available_free_nodes->getFreeNodeStructFromVertex(unmatched_arc.second);
 
-    // Creating the augmenting path
-    vector<Edge> augmenting_path = {unmatched_arc};
-    vector<Edge> root_of_u_to_u = {};
-    vector<Edge> v_to_root_of_v = {};
-    if (struct_of_u != nullptr) {
-        GraphNode *graph_node_of_u = struct_of_u->getGraphNodeFromVertex(unmatched_arc.first);
-        root_of_u_to_u = getLeafToRootPath(graph_node_of_u);
-        reverse(root_of_u_to_u.begin(), root_of_u_to_u.end());
-        struct_of_u->removed = true;
-    }
-    if (struct_of_v != nullptr) {
-        GraphNode *graph_node_of_v = struct_of_v->getGraphNodeFromVertex(unmatched_arc.second);
-        v_to_root_of_v = getLeafToRootPath(graph_node_of_v);
-        struct_of_v->removed = true;
-    }
+    GraphNode *graph_node_of_u = struct_of_u->getGraphNodeFromVertex(unmatched_arc.first);
+    GraphNode *graph_node_of_v = struct_of_v->getGraphNodeFromVertex(unmatched_arc.second);
+    AugmentingPath new_augmentation = getAugmentation(graph_node_of_u, graph_node_of_v, unmatched_arc.first, unmatched_arc.second, matching);
 
-    // TODO: Do we actually have to order the augmenting path? Doesn't necessarily seem needed.
-    augmenting_path.insert(augmenting_path.begin(), root_of_u_to_u.begin(), root_of_u_to_u.end());
-    augmenting_path.insert(augmenting_path.end(), v_to_root_of_v.begin(), v_to_root_of_v.end());
+    struct_of_u->removed = true;
+    struct_of_v->removed = true;
 
-    // TODO: Need to remove vertices? - Does making them on hold do the same thing?
-    disjoint_augmenting_paths->emplace_back(augmenting_path);
+    disjoint_augmenting_paths->emplace_back(new_augmentation);
 }
 
 
 void contractAndAugment(
     Stream* stream,
     AvailableFreeNodes* available_free_nodes,
-    vector<vector<Edge>>* disjoint_augmenting_paths
+    vector<AugmentingPath>* disjoint_augmenting_paths,
+    Matching* matching
 ) {
     // TODO: Can both of these steps be completed in one pass?
     // Contraction Step
@@ -236,7 +325,7 @@ void contractAndAugment(
             GraphNode* node_of_u = struct_of_u->getGraphNodeFromVertex(edge.first);
             GraphNode* node_of_v = struct_of_v->getGraphNodeFromVertex(edge.second);
             if (node_of_u->isOuterVertex && node_of_v->isOuterVertex && ! (struct_of_u->removed || struct_of_v->removed)) {
-                augment(disjoint_augmenting_paths, edge, available_free_nodes);
+                augment(disjoint_augmenting_paths, edge, available_free_nodes, matching);
             }
         }
 
@@ -280,6 +369,12 @@ void overtake(
     if (struct_of_t == nullptr && struct_of_v == nullptr) {
         GraphVertex* vertex_v = new GraphVertex(unmatched_arc.second);
         GraphVertex* vertex_t = new GraphVertex(matched_arc.second);
+
+        if (struct_of_u->working_node->isBlossom) {
+            GraphBlossom* blossom = dynamic_cast<GraphBlossom *>(struct_of_u->working_node);
+            blossom->outsideBlossomToIn[vertex_v] = unmatched_arc.first;
+        }
+
         vertex_v->parent = struct_of_u->working_node;
         vertex_v->parent_index = unmatched_arc.first;
         vertex_t->parent = vertex_v;
@@ -310,6 +405,24 @@ void overtake(
             GraphNode* current_parent_of_v = vertex_v->parent;
             // Removing vertex v from the set of it's parent's children.
             current_parent_of_v->children.erase(vertex_v);
+
+            // TODO: Check these are correct
+            if (current_parent_of_v->isBlossom) {
+                GraphBlossom* parent_blossom = dynamic_cast<GraphBlossom *>(current_parent_of_v);
+                parent_blossom->outsideBlossomToIn.erase(vertex_v);
+            }
+
+            if (vertex_v->isBlossom) {
+                GraphBlossom* blossom_v = dynamic_cast<GraphBlossom *>(vertex_v);
+                blossom_v->outsideBlossomToIn[vertex_u] = unmatched_arc.second;
+                blossom_v->outsideBlossomToIn.erase(current_parent_of_v);
+            }
+
+            if (vertex_u->isBlossom) {
+                GraphBlossom* blossom_u = dynamic_cast<GraphBlossom *>(vertex_u);
+                blossom_u->outsideBlossomToIn[vertex_v] = unmatched_arc.first;
+            }
+
             // Updating vertex v to now be parented by vertex u
             vertex_u->children.insert(vertex_v);
             vertex_v->parent = vertex_u;
@@ -331,6 +444,24 @@ void overtake(
 
             GraphNode* parent_of_v_in_struct_v = vertex_v->parent;
             parent_of_v_in_struct_v->children.erase(vertex_v);
+
+            // TODO: Check these correct
+            if (parent_of_v_in_struct_v->isBlossom) {
+                GraphBlossom* parent_blossom = dynamic_cast<GraphBlossom *>(parent_of_v_in_struct_v);
+                parent_blossom->outsideBlossomToIn.erase(vertex_v);
+            }
+
+            if (vertex_v->isBlossom) {
+                GraphBlossom* blossom_v = dynamic_cast<GraphBlossom *>(vertex_v);
+                blossom_v->outsideBlossomToIn[vertex_u] = unmatched_arc.second;
+                blossom_v->outsideBlossomToIn.erase(parent_of_v_in_struct_v);
+            }
+
+            if (vertex_u->isBlossom) {
+                GraphBlossom* blossom_u = dynamic_cast<GraphBlossom *>(vertex_u);
+                blossom_u->outsideBlossomToIn[vertex_v] = unmatched_arc.first;
+            }
+
 
             vertex_v->parent = vertex_u;
             vertex_v->parent_index = unmatched_arc.first;
@@ -358,7 +489,7 @@ void extendActivePath(
     Stream* stream,
     Matching* matching,
     AvailableFreeNodes* available_free_nodes,
-    vector<vector<Edge>>* disjoint_augmenting_paths,
+    vector<AugmentingPath>* disjoint_augmenting_paths,
     set<Vertex> removed_vertices
 ) {
     Edge edge = stream->readStream();
@@ -446,7 +577,7 @@ void extendActivePath(
             } else {
                 // TODO: Put this check in augment?
                 if (struct_of_v->getGraphNodeFromVertex(edge.second)->isOuterVertex) {
-                    augment(disjoint_augmenting_paths, edge, available_free_nodes);
+                    augment(disjoint_augmenting_paths, edge, available_free_nodes, matching);
                 }
             }
         }
@@ -473,13 +604,13 @@ void extendActivePath(
 }
 
 
-vector<vector<Edge>> algPhase(
+vector<AugmentingPath> algPhase(
     Stream* stream,
     Matching* matching,
     float epsilon,
     float scale
 ) {
-    vector<vector<Edge>> disjoint_augmenting_paths = {};
+    vector<AugmentingPath> disjoint_augmenting_paths = {};
 
     set<Vertex> removed_vertices = {};
 
@@ -498,7 +629,7 @@ vector<vector<Edge>> algPhase(
         }
 
         extendActivePath(stream, matching, &available_free_nodes, &disjoint_augmenting_paths, removed_vertices);
-        contractAndAugment(stream, &available_free_nodes, &disjoint_augmenting_paths);
+        contractAndAugment(stream, &available_free_nodes, &disjoint_augmenting_paths, matching);
         backtrackStuckStructures(&available_free_nodes);
     }
 
@@ -539,6 +670,7 @@ Matching algorithm(
 
     Matching matching = get2ApproximateMatching(stream);
     std::cout << "2 approximation: " << matching.matched_edges.size() << std::endl;
+    std::cout << matching << std::endl;
 
     float scale_limit = (epsilon * epsilon) / 64;
 
@@ -547,15 +679,23 @@ Matching algorithm(
 
         for (float phase = 1; phase <= phase_limit; phase++) {
             std::cout << "Scale: " << scale << "/" << scale_limit << " Phase: " << phase << "/" << phase_limit << std::endl;
-            vector<vector<Edge>> disjoint_augmenting_paths = algPhase(stream, &matching, epsilon, scale);
-            for (vector<Edge> path : disjoint_augmenting_paths) {
-                std::cout << "Path: ";
-                for (Edge edge : path) {
+            vector<AugmentingPath> disjoint_augmenting_paths = algPhase(stream, &matching, epsilon, scale);
+            // TODO: Update
+            for (AugmentingPath path : disjoint_augmenting_paths) {
+                std::cout << "Path: " << std::endl;
+                std::cout << "\tTo match: ";
+                for (Edge edge : path.first) {
+                    std::cout << edge.first << "->" << edge.second << " ";
+                }
+                std::cout << std::endl;
+                std::cout << "\tTo unmatch: ";
+                for (Edge edge : path.second) {
                     std::cout << edge.first << "->" << edge.second << " ";
                 }
                 std::cout << std::endl;
             }
             matching.augmentMatching(&disjoint_augmenting_paths);
+            std::cout << matching << std::endl;
             matching.verifyMatching();
         }
     }

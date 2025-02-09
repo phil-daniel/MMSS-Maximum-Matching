@@ -17,10 +17,6 @@ class GraphBlossom : public GraphNode {
         // An unordered map which takes an input of a node of the parent of the blossom and outputs the node within the blossom
         // that it is connected to.
         unordered_map<GraphNode*, Vertex> outsideBlossomToIn;
-        // TODO: Replace vertices in blossom w/ this
-        unordered_map<Vertex, GraphNode*> vertexToNodeInBlossom;
-        // TODO: Need to sort out which ones we need to keep
-        // TODO: Need to set items in nodeToInteriorBlossom
 
     // Functions
     private:
@@ -33,10 +29,13 @@ class GraphBlossom : public GraphNode {
         AugmentingPath getBlossomAugmentation(
             GraphNode* incoming_matched_node,
             Vertex incoming_matched_vertex,
+            Vertex in_blossom_matched,
             GraphNode* incoming_unmatched_node,
             Vertex incoming_unmatched_vertex,
+            Vertex in_blossom_unmatched,
             Matching* matching
         );
+        Vertex getOutsideBlossomToInValue(GraphNode* node);
         friend std::ostream &operator<<(std::ostream &os, const GraphBlossom &blossom);
 };
 
