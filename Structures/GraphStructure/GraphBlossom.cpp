@@ -50,7 +50,6 @@ void GraphBlossom::addGraphNodeToBlossom(GraphNode* node) {
             // We also need to add that there is an edge from this child node to the parent node in the blossom
             // TODO: Fix this by checking if node is a blossom and if so using th outsideBlossomToIn of the blossom
             outsideBlossomToIn[child_node] = child_node->parent_index;
-            std::cout << "Setting 1 : " << child_node << " : " << child_node->parent_index << std::endl;
         }
     }
 
@@ -60,7 +59,6 @@ void GraphBlossom::addGraphNodeToBlossom(GraphNode* node) {
     // Not sure this is needed. Only occurs if LCA?
     if (node->parent != nullptr && node->parent != this) {
         outsideBlossomToIn[node->parent] = node->vertex_id;
-        std::cout << "Setting 2 : " << node->parent << " : " << node->vertex_id << std::endl;
     }
 }
 
@@ -80,7 +78,6 @@ AugmentingPath GraphBlossom::getBlossomAugmentation(
     Matching* matching
 ) {
 
-    std::cout << "Rec" << std::endl;
     vector<Edge> to_match;
     vector<Edge> to_unmatch;
 
@@ -125,10 +122,6 @@ AugmentingPath GraphBlossom::getBlossomAugmentation(
         Vertex inside_blossom_to_match = in_blossom_matched;
         Vertex inside_blossom_to_unmatch = blossom->getOutsideBlossomToInValue(nodesInOrder[next_pos]);
 
-        for (const auto& pair : blossom->outsideBlossomToIn) {
-            std::cout << pair.first << " -> " << pair.second << "\n";
-        }
-
         AugmentingPath inner_augmentation = blossom->getBlossomAugmentation(
             incoming_matched_node,
             incoming_matched_vertex,
@@ -172,10 +165,6 @@ AugmentingPath GraphBlossom::getBlossomAugmentation(
             // "How do we get into this blossom from GraphNode x"
             Vertex vertex_in_blossom_connected_with_curr_pos = blossom->getOutsideBlossomToInValue(nodesInOrder[current_pos]);
             Vertex vertex_in_blossom_connected_with_next_next_pos = blossom->getOutsideBlossomToInValue(nodesInOrder[next_next_pos]);
-
-            for (const auto& pair : blossom->outsideBlossomToIn) {
-                std::cout << pair.first << " -> " << pair.second << "\n";
-            }
 
             Vertex from_matched_vertex = verticesInOrder[current_pos];
             Vertex from_unmatched_vertex = verticesInOrder[next_next_pos];

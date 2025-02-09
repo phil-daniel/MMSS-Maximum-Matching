@@ -74,8 +74,6 @@ AugmentingPath getAugmentation(
     Matching* matching
 ) {
 
-    std::cout << "AUGMENTING EDGE: " << vertex_in_u_joining << "->" << vertex_in_v_joining << std::endl;
-
     vector<Edge> to_match;
     vector<Edge> to_unmatch;
 
@@ -136,7 +134,6 @@ AugmentingPath getAugmentation(
             Vertex inside_to_unmatch = blossom->getOutsideBlossomToInValue(from_unmatched_node);
             if (inside_to_unmatch == -1) inside_to_unmatch = vertex_in_u_joining;
 
-            std::cout << "New" << std::endl;
             AugmentingPath blossom_augmentation = blossom->getBlossomAugmentation(
                 from_matched_node,
                 from_matched_vertex,
@@ -217,7 +214,6 @@ AugmentingPath getAugmentation(
             Vertex inside_to_unmatch = blossom->getOutsideBlossomToInValue(from_unmatched_node);
             if (inside_to_unmatch == -1) inside_to_unmatch = vertex_in_v_joining;
 
-            std::cout << "New" << std::endl;
             AugmentingPath blossom_augmentation = blossom->getBlossomAugmentation(
                 from_matched_node,
                 from_matched_vertex,
@@ -670,7 +666,6 @@ Matching algorithm(
 
     Matching matching = get2ApproximateMatching(stream);
     std::cout << "2 approximation: " << matching.matched_edges.size() << std::endl;
-    std::cout << matching << std::endl;
 
     float scale_limit = (epsilon * epsilon) / 64;
 
@@ -695,7 +690,6 @@ Matching algorithm(
                 std::cout << std::endl;
             }
             matching.augmentMatching(&disjoint_augmenting_paths);
-            std::cout << matching << std::endl;
             matching.verifyMatching();
         }
     }
