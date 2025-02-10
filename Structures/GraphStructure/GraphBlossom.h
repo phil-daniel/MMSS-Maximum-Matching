@@ -28,6 +28,7 @@ class GraphBlossom : public GraphNode {
         Vertex getVertexInsideConnectedByEdge(GraphNode* node) override;
         void addGraphNodeToBlossom(GraphNode* node);
         void deleteContents();
+        void recursivelyAddOutsideBlossomToIn(GraphNode* node, Vertex vertex);
         AugmentingPath getBlossomAugmentation(
             GraphNode* incoming_matched_node,
             Vertex incoming_matched_vertex,

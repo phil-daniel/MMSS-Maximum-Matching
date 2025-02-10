@@ -36,7 +36,7 @@ void FreeNodeStructure::contract(
 
     if (node_of_v->isBlossom) {
         GraphBlossom* blossom_v = dynamic_cast<GraphBlossom*>(node_of_v);
-        blossom_v->outsideBlossomToIn[node_of_u] = unmatched_arc.first;
+        blossom_v->outsideBlossomToIn[node_of_u] = unmatched_arc.second;
     }
 
     // Finding the Lowest Common Ancestor of u and v.
@@ -64,12 +64,12 @@ void FreeNodeStructure::contract(
             addVertexToStruct(vertex, new_blossom);
         }
 
-        for (pair<Vertex, GraphNode*> key_value : blossom_node->nodeOfVertexInBlossom) {
-            new_blossom->nodeOfVertexInBlossom[key_value.first] = blossom_node;
-        }
+        // for (pair<Vertex, GraphNode*> key_value : blossom_node->nodeOfVertexInBlossom) {
+        //     new_blossom->nodeOfVertexInBlossom[key_value.first] = blossom_node;
+        // }
     } else {
         addVertexToStruct(lca->vertex_id, new_blossom);
-        new_blossom->nodeOfVertexInBlossom[lca->vertex_id] = lca;
+        // new_blossom->nodeOfVertexInBlossom[lca->vertex_id] = lca;
     }
 
     current_pos = node_of_v;
@@ -82,12 +82,12 @@ void FreeNodeStructure::contract(
             for (Vertex vertex : blossom_node->verticesInBlossom) {
                 addVertexToStruct(vertex, new_blossom);
             }
-            for (pair<Vertex, GraphNode*> key_value : blossom_node->nodeOfVertexInBlossom) {
-                new_blossom->nodeOfVertexInBlossom[key_value.first] = blossom_node;
-            }
+            // for (pair<Vertex, GraphNode*> key_value : blossom_node->nodeOfVertexInBlossom) {
+            //     new_blossom->nodeOfVertexInBlossom[key_value.first] = blossom_node;
+            // }
         } else {
             addVertexToStruct(current_pos->vertex_id, new_blossom);
-            new_blossom->nodeOfVertexInBlossom[current_pos->vertex_id] = current_pos;
+            // new_blossom->nodeOfVertexInBlossom[current_pos->vertex_id] = current_pos;
         }
 
         if (current_pos == working_node) {
@@ -119,12 +119,12 @@ void FreeNodeStructure::contract(
             for (Vertex vertex : blossom_node->verticesInBlossom) {
                 addVertexToStruct(vertex, new_blossom);
             }
-            for (pair<Vertex, GraphNode*> key_value : blossom_node->nodeOfVertexInBlossom) {
-                new_blossom->nodeOfVertexInBlossom[key_value.first] = blossom_node;
-            }
+            // for (pair<Vertex, GraphNode*> key_value : blossom_node->nodeOfVertexInBlossom) {
+            //     new_blossom->nodeOfVertexInBlossom[key_value.first] = blossom_node;
+            // }
         } else {
             addVertexToStruct(node->vertex_id, new_blossom);
-            new_blossom->nodeOfVertexInBlossom[current_pos->vertex_id] = current_pos;
+            // new_blossom->nodeOfVertexInBlossom[current_pos->vertex_id] = current_pos;
         }
 
         if (node == working_node) {

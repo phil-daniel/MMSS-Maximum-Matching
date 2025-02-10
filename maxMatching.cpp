@@ -77,6 +77,15 @@ AugmentingPath getAugmentation(
     vector<Edge> to_match;
     vector<Edge> to_unmatch;
 
+    if (node_in_struct_u->isBlossom) {
+        GraphBlossom* blossom_u = dynamic_cast<GraphBlossom*>(node_in_struct_u);
+        blossom_u->recursivelyAddOutsideBlossomToIn(node_in_struct_v, vertex_in_u_joining);
+    }
+    if (node_in_struct_v->isBlossom) {
+        GraphBlossom* blossom_v = dynamic_cast<GraphBlossom*>(node_in_struct_v);
+        blossom_v->recursivelyAddOutsideBlossomToIn(node_in_struct_u, vertex_in_v_joining);
+    }
+
     GraphNode* curr_node = node_in_struct_u;
     vector<GraphNode*> node_to_u_root;
     while (curr_node != nullptr) {
@@ -196,7 +205,6 @@ AugmentingPath getAugmentation(
                 from_unmatched_node = node_to_u_root[pos + 1];
                 // TODO: Check that parent index works
                 from_unmatched_vertex = curr_node->parent_index;
-                std::cout << from_unmatched_vertex << std::endl;
             }
 
             // TODO: Need to check this is correct
@@ -369,7 +377,7 @@ void overtake(
 
         if (struct_of_u->working_node->isBlossom) {
             GraphBlossom* blossom = dynamic_cast<GraphBlossom *>(struct_of_u->working_node);
-            blossom->outsideBlossomToIn[vertex_v] = unmatched_arc.first;
+            blossom->recursivelyAddOutsideBlossomToIn(vertex_v, unmatched_arc.first);
         }
 
         vertex_v->parent = struct_of_u->working_node;
@@ -411,13 +419,15 @@ void overtake(
 
             if (vertex_v->isBlossom) {
                 GraphBlossom* blossom_v = dynamic_cast<GraphBlossom *>(vertex_v);
-                blossom_v->outsideBlossomToIn[vertex_u] = unmatched_arc.second;
+                blossom_v->recursivelyAddOutsideBlossomToIn(vertex_u, unmatched_arc.second);
+                //blossom_v->outsideBlossomToIn[vertex_u] = unmatched_arc.second;
                 blossom_v->outsideBlossomToIn.erase(current_parent_of_v);
             }
 
             if (vertex_u->isBlossom) {
                 GraphBlossom* blossom_u = dynamic_cast<GraphBlossom *>(vertex_u);
-                blossom_u->outsideBlossomToIn[vertex_v] = unmatched_arc.first;
+                blossom_u->recursivelyAddOutsideBlossomToIn(vertex_v, unmatched_arc.first);
+                //blossom_u->outsideBlossomToIn[vertex_v] = unmatched_arc.first;
             }
 
             // Updating vertex v to now be parented by vertex u
@@ -450,13 +460,15 @@ void overtake(
 
             if (vertex_v->isBlossom) {
                 GraphBlossom* blossom_v = dynamic_cast<GraphBlossom *>(vertex_v);
-                blossom_v->outsideBlossomToIn[vertex_u] = unmatched_arc.second;
+                blossom_v->recursivelyAddOutsideBlossomToIn(vertex_u, unmatched_arc.second);
+                //blossom_v->outsideBlossomToIn[vertex_u] = unmatched_arc.second;
                 blossom_v->outsideBlossomToIn.erase(parent_of_v_in_struct_v);
             }
 
             if (vertex_u->isBlossom) {
                 GraphBlossom* blossom_u = dynamic_cast<GraphBlossom *>(vertex_u);
-                blossom_u->outsideBlossomToIn[vertex_v] = unmatched_arc.first;
+                blossom_u->recursivelyAddOutsideBlossomToIn(vertex_v, unmatched_arc.first);
+                //blossom_u->outsideBlossomToIn[vertex_v] = unmatched_arc.first;
             }
 
 
@@ -619,7 +631,7 @@ vector<AugmentingPath> algPhase(
     matching->resetLabels();
 
     for (int pass_bundle = 0; pass_bundle < pass_bundles_max; pass_bundle++) {
-        //std::cout << "Pass: " << pass_bundle << "/" << pass_bundles_max << std::endl;
+        std::cout << "Pass: " << pass_bundle << "/" << pass_bundles_max << std::endl;
         for (FreeNodeStructure* free_node_struct : available_free_nodes.free_node_structures) {
             if (free_node_struct->vertex_to_graph_node.size() >= path_limit) free_node_struct->on_hold = true;
             else free_node_struct->on_hold = false;

@@ -8,6 +8,18 @@ GraphBlossom::GraphBlossom() {
     isBlossom = true;
 }
 
+void GraphBlossom::recursivelyAddOutsideBlossomToIn(GraphNode* node, Vertex vertex) {
+    outsideBlossomToIn[node] = vertex;
+
+    GraphNode* node_of_vertex = nodeOfVertexInBlossom[vertex];
+    if (node_of_vertex->isBlossom) {
+        GraphBlossom* blossom = dynamic_cast<GraphBlossom*>(node_of_vertex);
+        if (blossom->getVertexInsideConnectedByEdge(node) == -1) {
+            blossom->recursivelyAddOutsideBlossomToIn(node, vertex);
+        }
+    }
+}
+
 Vertex GraphBlossom::getVertexInsideConnectedByEdge(GraphNode* node) {
     if (outsideBlossomToIn.find(node) == outsideBlossomToIn.end()) {
         return -1;
@@ -32,13 +44,15 @@ void GraphBlossom::addGraphNodeToBlossom(GraphNode* node) {
         GraphBlossom* node_blossom = dynamic_cast<GraphBlossom *>(node);
         for (Vertex vertex : node_blossom->verticesInBlossom) {
             verticesInBlossom.insert(vertex);
+            nodeOfVertexInBlossom[vertex] = node;
         }
 
-        // TODO: might want to clean up inserting into outsideBlossomToIn, i.e if the key is already in the blossom its not needed.
-
-        outsideBlossomToIn.insert(node_blossom->outsideBlossomToIn.begin(), node_blossom->outsideBlossomToIn.end());
+        for (pair<GraphNode*, Vertex> pair: node_blossom->outsideBlossomToIn) {
+            outsideBlossomToIn[pair.first] = pair.second;
+        }
     } else {
         verticesInBlossom.insert(node->vertex_id);
+        nodeOfVertexInBlossom[node->vertex_id] = node;
     }
 
     for (GraphNode* child_node : node->children) {
@@ -78,7 +92,6 @@ AugmentingPath GraphBlossom::getBlossomAugmentation(
     Vertex in_blossom_unmatched,
     Matching* matching
 ) {
-
     vector<Edge> to_match;
     vector<Edge> to_unmatch;
 
@@ -103,10 +116,24 @@ AugmentingPath GraphBlossom::getBlossomAugmentation(
     Vertex forwards_start_edge_vertex = nodesInOrder[from_matched_pos]->getVertexInsideConnectedByEdge(nodesInOrder[matched_pos_plus_one]);
     Vertex backwards_start_edge_vertex = nodesInOrder[from_matched_pos]->getVertexInsideConnectedByEdge(nodesInOrder[matched_pos_minus_one]);
 
+
     Edge forwards_edge = make_pair(forwards_start_edge_vertex, matched_pos_plus_one_vertex);
     Edge backwards_edge = make_pair(backwards_start_edge_vertex, matched_pos_minus_one_vertex);
     if (! (matching->isInMatching(forwards_edge) || matching->isInMatching(backwards_edge))) {
-        return {{}, {}};
+        if (nodesInOrder[from_matched_pos]->isBlossom) {
+            GraphBlossom* blossom = dynamic_cast<GraphBlossom*>(nodesInOrder[from_matched_pos]);
+            AugmentingPath interior_augmentation = blossom->getBlossomAugmentation(
+                incoming_matched_node,
+                incoming_matched_vertex,
+                blossom->getVertexInsideConnectedByEdge(incoming_matched_node),
+                incoming_unmatched_node,
+                incoming_unmatched_vertex,
+                blossom->getVertexInsideConnectedByEdge(incoming_unmatched_node),
+                matching
+            );
+            return interior_augmentation;
+        }
+        return {to_match, to_unmatch};
     }
 
     // Since from_matched is going to become matched with the incoming edge, we know that it is the outgoing edge of from_matched that must
