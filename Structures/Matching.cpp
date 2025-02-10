@@ -9,7 +9,6 @@ Edge Matching::getStandardEdge(Edge edge) {
 }
 
 void Matching::augmentMatching(vector<AugmentingPath>* disjoint_augmenting_paths) {
-    // TODO: need to fix this augmentation, we are removing edges incorrectly
     for (AugmentingPath augmenting_path : (*disjoint_augmenting_paths)) {
         for (Edge edge : augmenting_path.first) {
             addEdge(edge);

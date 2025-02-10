@@ -158,10 +158,8 @@ AugmentingPath getAugmentation(
             Edge new_edge = make_pair(prev_vertex, curr_node->vertex_id);
 
             if (match_this_edge) {
-                std::cout << "9: " << new_edge.first << "->" << new_edge.second << std::endl;
                 to_match.emplace_back(new_edge);
             } else {
-                std::cout << "10: " << new_edge.first << "->" << new_edge.second << std::endl;
                 to_unmatch.emplace_back(new_edge);
             }
 
@@ -191,13 +189,14 @@ AugmentingPath getAugmentation(
             GraphNode* from_unmatched_node;
             Vertex from_unmatched_vertex;
             // Checking if we've reached the end of the augmenting path
-            if (pos == node_to_u_root.size() - 1) {
+            if (pos == node_to_v_root.size() - 1) {
                 from_unmatched_node = from_matched_node;
                 from_unmatched_vertex = from_matched_vertex;
             } else {
                 from_unmatched_node = node_to_u_root[pos + 1];
                 // TODO: Check that parent index works
                 from_unmatched_vertex = curr_node->parent_index;
+                std::cout << from_unmatched_vertex << std::endl;
             }
 
             // TODO: Need to check this is correct
@@ -240,10 +239,8 @@ AugmentingPath getAugmentation(
             Edge new_edge = make_pair(prev_vertex, curr_node->vertex_id);
 
             if (match_this_edge) {
-                std::cout << "11: " << new_edge.first << "->" << new_edge.second << std::endl;
                 to_match.emplace_back(new_edge);
             } else {
-                std::cout << "12: " << new_edge.first << "->" << new_edge.second << std::endl;
                 to_unmatch.emplace_back(new_edge);
             }
 
@@ -622,6 +619,7 @@ vector<AugmentingPath> algPhase(
     matching->resetLabels();
 
     for (int pass_bundle = 0; pass_bundle < pass_bundles_max; pass_bundle++) {
+        //std::cout << "Pass: " << pass_bundle << "/" << pass_bundles_max << std::endl;
         for (FreeNodeStructure* free_node_struct : available_free_nodes.free_node_structures) {
             if (free_node_struct->vertex_to_graph_node.size() >= path_limit) free_node_struct->on_hold = true;
             else free_node_struct->on_hold = false;
@@ -707,7 +705,7 @@ int main() {
     //Stream* stream = new StreamFromFile("example.txt");
     Stream* stream = new StreamFromMemory("test_graph.txt");
 
-    Matching matching = algorithm(stream, 0.1f);
+    Matching matching = algorithm(stream, 0.8f);
     std::cout << matching << std::endl;
 
     delete stream;
