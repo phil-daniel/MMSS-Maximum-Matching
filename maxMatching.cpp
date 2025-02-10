@@ -202,7 +202,7 @@ AugmentingPath getAugmentation(
                 from_unmatched_node = from_matched_node;
                 from_unmatched_vertex = from_matched_vertex;
             } else {
-                from_unmatched_node = node_to_u_root[pos + 1];
+                from_unmatched_node = curr_node->parent;
                 // TODO: Check that parent index works
                 from_unmatched_vertex = curr_node->parent_index;
             }
@@ -717,7 +717,7 @@ int main() {
     //Stream* stream = new StreamFromFile("example.txt");
     Stream* stream = new StreamFromMemory("test_graph.txt");
 
-    Matching matching = algorithm(stream, 0.8f);
+    Matching matching = algorithm(stream, 0.1f);
     std::cout << matching << std::endl;
 
     delete stream;
