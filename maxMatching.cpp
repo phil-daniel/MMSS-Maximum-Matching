@@ -631,7 +631,7 @@ vector<AugmentingPath> algPhase(
     matching->resetLabels();
 
     for (int pass_bundle = 0; pass_bundle < pass_bundles_max; pass_bundle++) {
-        std::cout << "Pass: " << pass_bundle << "/" << pass_bundles_max << std::endl;
+        std::cout << "Pass bundle: " << pass_bundle << "/" << pass_bundles_max << std::endl;
         for (FreeNodeStructure* free_node_struct : available_free_nodes.free_node_structures) {
             if (free_node_struct->vertex_to_graph_node.size() >= path_limit) free_node_struct->on_hold = true;
             else free_node_struct->on_hold = false;
@@ -642,6 +642,9 @@ vector<AugmentingPath> algPhase(
         contractAndAugment(stream, &available_free_nodes, &disjoint_augmenting_paths, matching);
         backtrackStuckStructures(&available_free_nodes);
     }
+
+    // TODO: REMOVE - TEMP TO CHECK REMAINING FREE NODES
+    std::cout << "Free Node Count: " << available_free_nodes.free_node_structures.size() << std::endl;
 
     return disjoint_augmenting_paths;
 }
