@@ -714,6 +714,7 @@ Matching algorithm(
         float phase_limit = 144.f / (scale * epsilon);
 
         for (float phase = 1; phase <= phase_limit; phase++) {
+
             std::cout << "Scale: " << scale << "/" << scale_limit << " Phase: " << phase << "/" << phase_limit << std::endl;
             vector<AugmentingPath> disjoint_augmenting_paths = algPhase(stream, &matching, epsilon, scale);
             // TODO: Update
@@ -730,6 +731,13 @@ Matching algorithm(
                 }
                 std::cout << std::endl;
             }
+
+            // TODO: Early finish testing
+            if (disjoint_augmenting_paths.empty()) {
+                std::cout << "No augmenting paths found in phase, skipping remainder of the phase." << std::endl;
+                break;
+            }
+
             matching.augmentMatching(&disjoint_augmenting_paths);
             matching.verifyMatching();
         }

@@ -93,6 +93,14 @@ AugmentingPath GraphBlossom::getBlossomAugmentation(
     Matching* matching
 ) {
 
+    // // TODO: Remove as inputs?
+    int tmp = getVertexInsideConnectedByEdge(incoming_unmatched_node);
+    if (tmp != -1) {
+        in_blossom_unmatched = tmp;
+    }
+
+    // in_blossom_matched = outsideBlossomToIn[incoming_matched_node];
+
     vector<Edge> to_match;
     vector<Edge> to_unmatch;
 
@@ -282,6 +290,7 @@ AugmentingPath GraphBlossom::getBlossomAugmentation(
     } else {
         // Only need to add this edge if we aren't entering and exiting from the same node.
         Vertex vertex_connected_to_incoming_unmatched = nodesInOrder[from_unmatched_pos]->getVertexInsideConnectedByEdge(incoming_unmatched_node);
+
         to_unmatch.emplace_back(incoming_unmatched_vertex, vertex_connected_to_incoming_unmatched);
     }
     to_match.emplace_back(incoming_matched_vertex, in_blossom_matched);

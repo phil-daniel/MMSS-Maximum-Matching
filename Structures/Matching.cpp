@@ -82,11 +82,13 @@ void Matching::verifyMatching() {
     set<Vertex> used_vertices = {};
     for (Edge edge : matched_edges) {
         if (used_vertices.find(edge.first) != used_vertices.end()) {
-            std::cout << "ERROR: Vertex " << edge.first << " already used" << std::endl;
+            Edge used_in = vertex_to_matched_edge[edge.first];
+            std::cout << "ERROR: Vertex " << edge.first << " already used in " << used_in.first << "->" << used_in.second << std::endl;
             exit(1);
         }
         if (used_vertices.find(edge.second) != used_vertices.end()) {
-            std::cout << "ERROR: Vertex " << edge.second << " already used" << std::endl;
+            Edge used_in = vertex_to_matched_edge[edge.second];
+            std::cout << "ERROR: Vertex " << edge.second << "already used in " << used_in.first << "->" << used_in.second << std::endl;
             exit(1);
         }
 
@@ -103,5 +105,6 @@ std::ostream &operator<<(std::ostream &os, Matching &matching) {
     for (Edge edge : matching.matched_edges) {
         os << "\n\t(" << edge.first << "->" << edge.second << ") : " << matching.getLabel(edge);
     }
+    os << "\nMatching size: " << matching.matched_edges.size() << std::endl;
     return os;
 }
