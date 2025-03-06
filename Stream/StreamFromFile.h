@@ -6,8 +6,10 @@
 using namespace std;
 
 class StreamFromFile : public Stream {
-
-    ifstream file{};
+    private:
+        pair<int,int> last_edge = make_pair(-1,-1);
+        bool show_last_edge = false;
+        ifstream file{};
 
     public:
         explicit StreamFromFile(string file_name);

@@ -7,10 +7,18 @@ using namespace std;
 StreamFromFile::StreamFromFile(string file_name) {
     file = ifstream(file_name);
     number_of_passes = 0;
+    last_edge = make_pair(-1,-1);
+    show_last_edge = false;
 }
 
 pair<int, int> StreamFromFile::readStream() {
     string line;
+
+    // Returning the second arc of the edge.
+    if (show_last_edge) {
+        show_last_edge = false;
+        return last_edge;
+    }
 
     // Occurs when we are at the end of the stream.
     if (! getline(file, line)) {
@@ -37,6 +45,9 @@ pair<int, int> StreamFromFile::readStream() {
 
     int v1 = stoi(v1_text);
     int v2 = stoi(v2_text);
+
+    last_edge = make_pair(v2, v1);
+    show_last_edge = true;
 
     return make_pair(v1, v2);
 }
