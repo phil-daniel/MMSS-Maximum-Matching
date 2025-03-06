@@ -283,14 +283,15 @@ void augment(
     disjoint_augmenting_paths->emplace_back(new_augmentation);
 }
 
-
 void contractAndAugment(
     Stream* stream,
     AvailableFreeNodes* available_free_nodes,
     vector<AugmentingPath>* disjoint_augmenting_paths,
     Matching* matching
 ) {
-    // TODO: Can both of these steps be completed in one pass?
+
+    unordered_map<FreeNodeStructure*, vector<Edge>> edges_in_structures;
+
     // Contraction Step
     Edge edge = stream->readStream();
     // edges are only -1 if we have reached the end of the stream.
@@ -299,21 +300,43 @@ void contractAndAugment(
         FreeNodeStructure* struct_of_u = available_free_nodes->getFreeNodeStructFromVertex(edge.first);
         FreeNodeStructure* struct_of_v = available_free_nodes->getFreeNodeStructFromVertex(edge.second);
 
-        // Handling either of them being not part of a structure (i.e. nullptr) and ensuring they are in the same struct
-        if (struct_of_u != nullptr && struct_of_u == struct_of_v && !struct_of_u->removed) {
-            // We know both of these nodes are in the same structure now.
+        // If the two vertices are in the same non-removed structure.
+        if (
+            struct_of_u != nullptr && struct_of_u == struct_of_v &&
+            ! struct_of_u->removed && ! struct_of_v->removed
+        ) {
             GraphNode* node_of_u = struct_of_u->getGraphNodeFromVertex(edge.first);
             GraphNode* node_of_v = struct_of_u->getGraphNodeFromVertex(edge.second);
+
+            // If the two vertices are not in the same root blossom.
             if (node_of_u != node_of_v) {
-                // We now know they aren't part of the same blossom -> we don't need to contract if it's already a blossom
-                if (node_of_u->isOuterVertex && node_of_v->isOuterVertex) {
-                    struct_of_u->contract(edge);
+                // Adding the edge to the list of edges connecting vertices in the structure
+                if (edges_in_structures.find(struct_of_u) == edges_in_structures.end()) {
+                    edges_in_structures[struct_of_u] = {edge};
+                } else {
+                    edges_in_structures[struct_of_u].emplace_back(edge);
                 }
             }
         }
 
         // Reading next edge
         edge = stream->readStream();
+    }
+
+    for (pair<FreeNodeStructure*, vector<Edge>> pair : edges_in_structures) {
+        int contractions_in_last_iteration = -1;
+        while (contractions_in_last_iteration != 0) {
+            contractions_in_last_iteration = 0;
+            for (Edge edge_in_struct : pair.second) {
+                GraphNode* node_of_u = pair.first->getGraphNodeFromVertex(edge_in_struct.first);
+                GraphNode* node_of_v = pair.first->getGraphNodeFromVertex(edge_in_struct.second);
+
+                if (node_of_u != node_of_v &&  node_of_u->isOuterVertex && node_of_v->isOuterVertex) {
+                    pair.first->contract(edge_in_struct);
+                    contractions_in_last_iteration += 1;
+                }
+            }
+        }
     }
 
     // Augmentation Step
@@ -720,8 +743,9 @@ int main() {
     //Stream* stream = new StreamFromFile("example.txt");
     Stream* stream = new StreamFromMemory("test_graph.txt");
 
-    Matching matching = algorithm(stream, 0.1f);
+    Matching matching = algorithm(stream, 0.99f);
     std::cout << matching << std::endl;
+    std::cout << "Total number of passes: " << stream->number_of_passes << std::endl;
 
     delete stream;
 

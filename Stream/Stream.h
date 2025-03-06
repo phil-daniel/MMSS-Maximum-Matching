@@ -6,6 +6,8 @@
 using namespace std;
 
 class Stream {
+    public:
+        int number_of_passes = 0;
 
     public:
         virtual ~Stream(void){};

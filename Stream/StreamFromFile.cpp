@@ -6,6 +6,7 @@ using namespace std;
 
 StreamFromFile::StreamFromFile(string file_name) {
     file = ifstream(file_name);
+    number_of_passes = 0;
 }
 
 pair<int, int> StreamFromFile::readStream() {
@@ -17,6 +18,8 @@ pair<int, int> StreamFromFile::readStream() {
         // Returning to the beginning of the file in preparation for the next readStream() call
         file.clear();
         file.seekg(0, ios::beg);
+
+        number_of_passes += 1;
 
         // -1 will represent the fact that we have reached the end of the stream.
         return make_pair(-1, -1);

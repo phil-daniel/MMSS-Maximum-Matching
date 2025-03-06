@@ -1,6 +1,8 @@
 #include "StreamFromMemory.h"
 
 StreamFromMemory::StreamFromMemory(string file_name) {
+    number_of_passes = 0;
+
     ifstream file = ifstream(file_name);
 
     string line;
@@ -31,6 +33,7 @@ StreamFromMemory::StreamFromMemory(string file_name) {
 pair<int, int> StreamFromMemory::readStream() {
 
     if (line_number >= lines.size()) {
+        number_of_passes += 1;
         line_number = 0;
         return make_pair(-1, -1);
     }
