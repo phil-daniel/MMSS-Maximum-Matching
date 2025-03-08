@@ -394,7 +394,7 @@ void overtake(
     // TODO: needs nullptr check and merge with below
 
     // Case 1: Our matched_arc is not currently in a structure
-    if (struct_of_t == nullptr && struct_of_v == nullptr) {
+    if (struct_of_v == nullptr && struct_of_t == nullptr) {
         GraphVertex* vertex_v = new GraphVertex(unmatched_arc.second);
         GraphVertex* vertex_t = new GraphVertex(matched_arc.second);
 
@@ -417,6 +417,10 @@ void overtake(
         available_free_nodes->addNodeToStruct(vertex_v, vertex_v, struct_of_u);
 
         matching->setLabel(matched_arc, current_label+1);
+
+        struct_of_u->modified = true;
+
+        std::cout << "\tOvertake: " << struct_of_u->free_node_root->vertex_id << " on nothing" << std::endl;
     }
 
     // Case 2: If our matched_arc is currently in a structure.
@@ -464,6 +468,8 @@ void overtake(
             struct_of_t->modified = true;
 
             updateChildLabels(vertex_v, current_label+1, matching);
+
+            std::cout << "\tOvertake: " << struct_of_u->free_node_root->vertex_id << " on itself" << std::endl;
 
         }
         // Case 2.2: If the matched arc is in a different structure to u, with the unmatched arc (u,v) joining the two structures.
@@ -513,6 +519,8 @@ void overtake(
             struct_of_v->modified = true;
 
             updateChildLabels(vertex_v, current_label+1, matching);
+
+            std::cout << "\tOvertake other: " << struct_of_u->free_node_root->vertex_id << " on " << struct_of_v->free_node_root->vertex_id << std::endl;
         }
     }
 }
@@ -549,13 +557,14 @@ void extendActivePath(
 
         // Case 1 - If we have "removed" one of the vertices from the graph, we skip this edge.
         // TODO: Get rid of removed_vertices?
-        if (
-            removed_vertices.find(edge.first) != removed_vertices.end() ||
-            removed_vertices.find(edge.second) != removed_vertices.end()
-        ) {
-            edge = stream->readStream();
-            continue;
-        }
+        // TODO: removed_vertices doesn't work as intended
+        // if (
+        //     removed_vertices.find(edge.first) != removed_vertices.end() ||
+        //     removed_vertices.find(edge.second) != removed_vertices.end()
+        // ) {
+        //     edge = stream->readStream();
+        //     continue;
+        // }
 
         // Case 2: If blossom1 is in the same node as blossom2, vertex1 isn't a working vertex
         // or the edge is already matched, we skip this edge.
@@ -572,8 +581,8 @@ void extendActivePath(
         }
         if (
             (
-                struct_of_u != nullptr && struct_of_v != nullptr &&
-                struct_of_u->getGraphNodeFromVertex(edge.first) == struct_of_v->getGraphNodeFromVertex(edge.second)
+                struct_of_u == struct_of_v &&
+                struct_of_u->getGraphNodeFromVertex(edge.first) == struct_of_u->getGraphNodeFromVertex(edge.second)
             ) ||
             (struct_of_u != nullptr && struct_of_u->working_node != struct_of_u->getGraphNodeFromVertex(edge.first)) ||
             matching->isInMatching(edge)
@@ -595,7 +604,10 @@ void extendActivePath(
         }
 
         // Case 4: If blossom of u is an outer vertex we contract it.
-        if (struct_of_u != nullptr && struct_of_v != nullptr && struct_of_u->getGraphNodeFromVertex(edge.first)->isOuterVertex) {
+        if (struct_of_u != nullptr && struct_of_v != nullptr &&
+            struct_of_u->getGraphNodeFromVertex(edge.first)->isOuterVertex &&
+            struct_of_v->getGraphNodeFromVertex(edge.second)->isOuterVertex
+        ) {
             // TODO: Add more checks here.
             if (struct_of_u == struct_of_v) {
                 // in the same structure
@@ -618,7 +630,11 @@ void extendActivePath(
         else {
             // Getting the edge which is the parent to u.
             Edge matching_using_u = matching->getMatchedEdgeFromVertex(edge.first);
-            int distance_to_u = matching->getLabel(matching_using_u);
+            int distance_to_u = 0;
+            // If u is a free vertex it won't have a matching connecting to it.
+            if (matching_using_u.first != -1) {
+                distance_to_u = matching->getLabel(matching_using_u);
+            }
 
             Edge matching_using_v = matching->getMatchedEdgeFromVertex(edge.second);
             int distance_to_v = matching->getLabel(matching_using_v);
@@ -664,6 +680,7 @@ vector<AugmentingPath> algPhase(
         extendActivePath(stream, matching, &available_free_nodes, &disjoint_augmenting_paths, removed_vertices);
         contractAndAugment(stream, &available_free_nodes, &disjoint_augmenting_paths, matching);
         backtrackStuckStructures(&available_free_nodes);
+
     }
 
     // TODO: REMOVE - TEMP TO CHECK REMAINING FREE NODES
