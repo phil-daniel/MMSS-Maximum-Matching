@@ -419,8 +419,6 @@ void overtake(
         matching->setLabel(matched_arc, current_label+1);
 
         struct_of_u->modified = true;
-
-        std::cout << "\tOvertake: " << struct_of_u->free_node_root->vertex_id << " on nothing" << std::endl;
     }
 
     // Case 2: If our matched_arc is currently in a structure.
@@ -468,9 +466,6 @@ void overtake(
             struct_of_t->modified = true;
 
             updateChildLabels(vertex_v, current_label+1, matching);
-
-            std::cout << "\tOvertake: " << struct_of_u->free_node_root->vertex_id << " on itself" << std::endl;
-
         }
         // Case 2.2: If the matched arc is in a different structure to u, with the unmatched arc (u,v) joining the two structures.
         // I.e. overtaking between two structures.
@@ -519,8 +514,6 @@ void overtake(
             struct_of_v->modified = true;
 
             updateChildLabels(vertex_v, current_label+1, matching);
-
-            std::cout << "\tOvertake other: " << struct_of_u->free_node_root->vertex_id << " on " << struct_of_v->free_node_root->vertex_id << std::endl;
         }
     }
 }
@@ -656,7 +649,8 @@ vector<AugmentingPath> algPhase(
     Stream* stream,
     Matching* matching,
     float epsilon,
-    float scale
+    float scale,
+    Config config
 ) {
     vector<AugmentingPath> disjoint_augmenting_paths = {};
 
@@ -670,7 +664,7 @@ vector<AugmentingPath> algPhase(
     matching->resetLabels();
 
     for (int pass_bundle = 0; pass_bundle < pass_bundles_max; pass_bundle++) {
-        std::cout << "Pass bundle: " << pass_bundle << "/" << pass_bundles_max << std::endl;
+        if (config.progress >= PASS_BUNDLE) std::cout << "Pass bundle: " << pass_bundle << "/" << pass_bundles_max << std::endl;
         for (FreeNodeStructure* free_node_struct : available_free_nodes.free_node_structures) {
             if (free_node_struct->vertex_to_graph_node.size() >= path_limit) free_node_struct->on_hold = true;
             else free_node_struct->on_hold = false;
@@ -718,22 +712,36 @@ Matching get2ApproximateMatching(
 
 Matching algorithm(
     Stream* stream,
-    float epsilon
+    float epsilon,
+    int progress_report = 3,
+    int optimisation_level = 0
 ) {
+    // Setting up the config structure.
+    Config config;
+    if (progress_report < NO_OUTPUT) config.progress = NO_OUTPUT;
+    else if (progress_report > PASS_BUNDLE) config.progress = PASS_BUNDLE;
+    else config.progress = static_cast<ProgressReport>(progress_report);
 
+    if (optimisation_level < NO_OUTPUT) config.optimisation_level = NO_OPTIMISATION;
+    else if (optimisation_level > APPROX_MET) config.optimisation_level = APPROX_MET;
+    else config.optimisation_level = static_cast<OptimisationLevel>(optimisation_level);
+
+    // Computing a 2-approximate matching for the graph
     Matching matching = get2ApproximateMatching(stream);
-    std::cout << "2 approximation: " << matching.matched_edges.size() << std::endl;
-    std::cout << matching << std::endl;
+    // Outputting the information about the matching if required
+    if (config.progress >= SCALE) std::cout << "2 approximation: " << matching.matched_edges.size() << std::endl;
+    if (config.progress >= PHASE) std::cout << matching << std::endl;
 
     float scale_limit = (epsilon * epsilon) / 64;
 
     for (float scale = 1.f/2.f; scale >= scale_limit; scale = scale * 1.f / 2.f) {
+        if (config.progress >= SCALE) std::cout << "Scale change: " << scale << "/" << scale_limit << std::endl;
         float phase_limit = 144.f / (scale * epsilon);
 
         for (float phase = 1; phase <= phase_limit; phase++) {
 
-            std::cout << "Scale: " << scale << "/" << scale_limit << " Phase: " << phase << "/" << phase_limit << std::endl;
-            vector<AugmentingPath> disjoint_augmenting_paths = algPhase(stream, &matching, epsilon, scale);
+            if (config.progress >= PHASE) std::cout << "Scale: " << scale << "/" << scale_limit << " Phase: " << phase << "/" << phase_limit << std::endl;
+            vector<AugmentingPath> disjoint_augmenting_paths = algPhase(stream, &matching, epsilon, scale, config);
             // TODO: Update
             for (AugmentingPath path : disjoint_augmenting_paths) {
                 std::cout << "Path: " << std::endl;
