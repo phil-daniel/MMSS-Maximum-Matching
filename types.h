@@ -16,7 +16,8 @@ enum ProgressReport {
     NO_OUTPUT = 0, // No progress output
     SCALE = 1, // Outputs when new scale
     PHASE = 2, // Outputs when new phase or scale
-    PASS_BUNDLE = 3 // Outputs when new phase, scale or pass_bundle
+    PASS_BUNDLE = 3, // Outputs when new phase, scale or pass_bundle
+    VERBOSE = 4, // Outputs above in addition to all operations which take place.
 };
 
 enum OptimisationLevel {
@@ -28,7 +29,7 @@ enum OptimisationLevel {
 };
 
 struct Config {
-    ProgressReport progress;
+    ProgressReport progress_report;
     OptimisationLevel optimisation_level;
 };
 

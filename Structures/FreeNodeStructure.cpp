@@ -161,6 +161,8 @@ void FreeNodeStructure::contract(
     } else {
         new_blossom->isOuterVertex = ! new_blossom->parent->isOuterVertex;
     }
+
+    this->modified = true;
 }
 
 void FreeNodeStructure::backtrack() {
@@ -175,11 +177,11 @@ void FreeNodeStructure::backtrack() {
     // TODO: Better handle inactive structures?
     if (new_working_node != nullptr && new_working_node->parent != nullptr) {
         new_working_node = new_working_node->parent->parent;
+        working_node = new_working_node;
+    } else {
+        working_node = nullptr;
     }
 
-    working_node = new_working_node;
-
-    // TODO: Make structure inactive? This should already be done by setting working node to nullptr
 
 
 }

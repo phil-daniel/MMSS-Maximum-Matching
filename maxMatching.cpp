@@ -287,7 +287,8 @@ void contractAndAugment(
     Stream* stream,
     AvailableFreeNodes* available_free_nodes,
     vector<AugmentingPath>* disjoint_augmenting_paths,
-    Matching* matching
+    Matching* matching,
+    Config config
 ) {
 
     unordered_map<FreeNodeStructure*, vector<Edge>> edges_in_structures;
@@ -334,6 +335,11 @@ void contractAndAugment(
                 if (node_of_u != node_of_v &&  node_of_u->isOuterVertex && node_of_v->isOuterVertex) {
                     pair.first->contract(edge_in_struct);
                     contractions_in_last_iteration += 1;
+
+                    if (config.progress_report >= VERBOSE) {
+                        std::cout << "ContractAndAugment - Contract: Struct " << pair.first->free_node_root->vertex_id;
+                        std::cout << " on edge " << edge_in_struct.first << "->" << edge_in_struct.second << std::endl;
+                    }
                 }
             }
         }
@@ -354,6 +360,12 @@ void contractAndAugment(
             GraphNode* node_of_v = struct_of_v->getGraphNodeFromVertex(edge.second);
             if (node_of_u->isOuterVertex && node_of_v->isOuterVertex && ! (struct_of_u->removed || struct_of_v->removed)) {
                 augment(disjoint_augmenting_paths, edge, available_free_nodes, matching);
+
+                if (config.progress_report >= VERBOSE) {
+                    std::cout << "ContractAndAugment - Augment: Struct " << struct_of_u->free_node_root->vertex_id;
+                    std::cout << " and Struct "<< struct_of_v->free_node_root->vertex_id;
+                    std::cout << " on edge " << edge.first << "->" << edge.second << std::endl;
+                }
             }
         }
 
@@ -363,10 +375,19 @@ void contractAndAugment(
 }
 
 void backtrackStuckStructures(
-    AvailableFreeNodes* available_free_nodes
+    AvailableFreeNodes* available_free_nodes,
+    Config config
 ) {
     for (FreeNodeStructure* structure : available_free_nodes->free_node_structures) {
+        if (structure->on_hold || structure->modified || structure->removed || structure->working_node == nullptr) {
+            continue;
+        }
+
         structure->backtrack();
+        if (config.progress_report >= VERBOSE) {
+            std::cout << "Backtracking: Struct " << structure->free_node_root->vertex_id << std::endl;
+            if (structure->working_node == nullptr) std::cout << "Struct " << structure->free_node_root->vertex_id << " now inactive." << std::endl;
+        }
     }
 }
 
@@ -374,7 +395,8 @@ void overtake(
     Edge unmatched_arc, // (u,v)
     Edge matched_arc, // (v,t)
     AvailableFreeNodes* available_free_nodes,
-    Matching* matching
+    Matching* matching,
+    Config config
 ) {
     // TODO: Add input check?
 
@@ -419,6 +441,11 @@ void overtake(
         matching->setLabel(matched_arc, current_label+1);
 
         struct_of_u->modified = true;
+
+        if (config.progress_report >= VERBOSE) {
+            std::cout << "Overtake Case 1: Struct " << struct_of_u->free_node_root->vertex_id;
+            std::cout << ", edge " << unmatched_arc.first << "->" << unmatched_arc.second << std::endl;
+        }
     }
 
     // Case 2: If our matched_arc is currently in a structure.
@@ -466,6 +493,11 @@ void overtake(
             struct_of_t->modified = true;
 
             updateChildLabels(vertex_v, current_label+1, matching);
+
+            if (config.progress_report >= VERBOSE) {
+                std::cout << "Overtake Case 2.1: Struct " << struct_of_u->free_node_root->vertex_id;
+                std::cout << " on itself, edge " << unmatched_arc.first << "->" << unmatched_arc.second << std::endl;
+            }
         }
         // Case 2.2: If the matched arc is in a different structure to u, with the unmatched arc (u,v) joining the two structures.
         // I.e. overtaking between two structures.
@@ -514,6 +546,12 @@ void overtake(
             struct_of_v->modified = true;
 
             updateChildLabels(vertex_v, current_label+1, matching);
+
+            if (config.progress_report >= VERBOSE) {
+                std::cout << "Overtake Case 2.2: Struct " << struct_of_u->free_node_root->vertex_id;
+                std::cout << " on Struct "<< struct_of_v->free_node_root->vertex_id;
+                std::cout << ", edge " << unmatched_arc.first << "->" << unmatched_arc.second << std::endl;
+            }
         }
     }
 }
@@ -523,7 +561,7 @@ void extendActivePath(
     Matching* matching,
     AvailableFreeNodes* available_free_nodes,
     vector<AugmentingPath>* disjoint_augmenting_paths,
-    set<Vertex> removed_vertices
+    Config config
 ) {
     Edge edge = stream->readStream();
     // edges are only -1 if we have reached the end of the stream.
@@ -548,36 +586,26 @@ void extendActivePath(
             available_free_nodes->createNewStruct(new_vertex_v);
         }
 
-        // Case 1 - If we have "removed" one of the vertices from the graph, we skip this edge.
-        // TODO: Get rid of removed_vertices?
-        // TODO: removed_vertices doesn't work as intended
-        // if (
-        //     removed_vertices.find(edge.first) != removed_vertices.end() ||
-        //     removed_vertices.find(edge.second) != removed_vertices.end()
-        // ) {
-        //     edge = stream->readStream();
-        //     continue;
-        // }
-
-        // Case 2: If blossom1 is in the same node as blossom2, vertex1 isn't a working vertex
-        // or the edge is already matched, we skip this edge.
         FreeNodeStructure* struct_of_u = available_free_nodes->getFreeNodeStructFromVertex(edge.first);
-        // TODO: Is this correct, if nullptr for u, we skip?
+        FreeNodeStructure* struct_of_v = available_free_nodes->getFreeNodeStructFromVertex(edge.second);
         if (struct_of_u == nullptr) {
             edge = stream->readStream();
             continue;
         }
-        FreeNodeStructure* struct_of_v = available_free_nodes->getFreeNodeStructFromVertex(edge.second);
+        // Case 1 - If we have "removed" one of the vertices from the graph, we skip this edge.
         if (struct_of_u->removed || (struct_of_v != nullptr && struct_of_v->removed) ) {
             edge = stream->readStream();
             continue;
         }
+
+        // Case 2: If blossom1 is in the same root blossom as blossom2, vertex1 isn't a working vertex
+        // or the edge is already matched, we skip this edge.
         if (
             (
                 struct_of_u == struct_of_v &&
                 struct_of_u->getGraphNodeFromVertex(edge.first) == struct_of_u->getGraphNodeFromVertex(edge.second)
             ) ||
-            (struct_of_u != nullptr && struct_of_u->working_node != struct_of_u->getGraphNodeFromVertex(edge.first)) ||
+            (struct_of_u->working_node != struct_of_u->getGraphNodeFromVertex(edge.first)) ||
             matching->isInMatching(edge)
         ) {
             edge = stream->readStream();
@@ -585,13 +613,7 @@ void extendActivePath(
         }
 
         // Case 3: If the first vertex is in a "marked" or "on hold" structure, we skip this edge.
-        if (
-            struct_of_u != nullptr &&
-            (
-                struct_of_u->modified ||
-                struct_of_u->on_hold
-            )
-        ) {
+        if (struct_of_u->modified || struct_of_u->on_hold) {
             edge = stream->readStream();
             continue;
         }
@@ -601,7 +623,6 @@ void extendActivePath(
             struct_of_u->getGraphNodeFromVertex(edge.first)->isOuterVertex &&
             struct_of_v->getGraphNodeFromVertex(edge.second)->isOuterVertex
         ) {
-            // TODO: Add more checks here.
             if (struct_of_u == struct_of_v) {
                 // in the same structure
                 if (struct_of_u->getGraphNodeFromVertex(edge.first) != struct_of_u->getGraphNodeFromVertex(edge.second)) {
@@ -609,12 +630,20 @@ void extendActivePath(
                     if (struct_of_v->getGraphNodeFromVertex(edge.second)->isOuterVertex) {
                         // both are outer vertices
                         struct_of_u->contract(edge);
+                        if (config.progress_report >= VERBOSE) {
+                            std::cout << "Contract: Struct " << struct_of_u->free_node_root->vertex_id;
+                            std::cout << " on edge" << edge.first << "->" << edge.second << std::endl;
+                        }
                     }
                 }
             } else {
-                // TODO: Put this check in augment?
                 if (struct_of_v->getGraphNodeFromVertex(edge.second)->isOuterVertex) {
                     augment(disjoint_augmenting_paths, edge, available_free_nodes, matching);
+                    if (config.progress_report >= VERBOSE) {
+                        std::cout << "Augment: Struct " << struct_of_u->free_node_root->vertex_id;
+                        std::cout << " and Struct "<< struct_of_v->free_node_root->vertex_id;
+                        std::cout << " on edge" << edge.first << "->" << edge.second << std::endl;
+                    }
                 }
             }
         }
@@ -634,7 +663,7 @@ void extendActivePath(
 
             // TODO: Move check of corrected matched edge somewhere else?
             if (distance_to_u + 1 < distance_to_v && matching_using_v.first != -1) {
-                overtake(edge, matching_using_v, available_free_nodes, matching);
+                overtake(edge, matching_using_v, available_free_nodes, matching, config);
             }
         }
 
@@ -664,16 +693,16 @@ vector<AugmentingPath> algPhase(
     matching->resetLabels();
 
     for (int pass_bundle = 0; pass_bundle < pass_bundles_max; pass_bundle++) {
-        if (config.progress >= PASS_BUNDLE) std::cout << "Pass bundle: " << pass_bundle << "/" << pass_bundles_max << std::endl;
+        if (config.progress_report >= PASS_BUNDLE) std::cout << "Pass bundle: " << pass_bundle << "/" << pass_bundles_max << std::endl;
         for (FreeNodeStructure* free_node_struct : available_free_nodes.free_node_structures) {
             if (free_node_struct->vertex_to_graph_node.size() >= path_limit) free_node_struct->on_hold = true;
             else free_node_struct->on_hold = false;
             free_node_struct->modified = false;
         }
 
-        extendActivePath(stream, matching, &available_free_nodes, &disjoint_augmenting_paths, removed_vertices);
-        contractAndAugment(stream, &available_free_nodes, &disjoint_augmenting_paths, matching);
-        backtrackStuckStructures(&available_free_nodes);
+        extendActivePath(stream, matching, &available_free_nodes, &disjoint_augmenting_paths, config);
+        contractAndAugment(stream, &available_free_nodes, &disjoint_augmenting_paths, matching, config);
+        backtrackStuckStructures(&available_free_nodes, config);
 
     }
 
@@ -714,13 +743,13 @@ Matching algorithm(
     Stream* stream,
     float epsilon,
     int progress_report = 3,
-    int optimisation_level = 0
+    int optimisation_level = 3
 ) {
     // Setting up the config structure.
     Config config;
-    if (progress_report < NO_OUTPUT) config.progress = NO_OUTPUT;
-    else if (progress_report > PASS_BUNDLE) config.progress = PASS_BUNDLE;
-    else config.progress = static_cast<ProgressReport>(progress_report);
+    if (progress_report < NO_OUTPUT) config.progress_report = NO_OUTPUT;
+    else if (progress_report > VERBOSE) config.progress_report = VERBOSE;
+    else config.progress_report = static_cast<ProgressReport>(progress_report);
 
     if (optimisation_level < NO_OUTPUT) config.optimisation_level = NO_OPTIMISATION;
     else if (optimisation_level > APPROX_MET) config.optimisation_level = APPROX_MET;
@@ -729,36 +758,39 @@ Matching algorithm(
     // Computing a 2-approximate matching for the graph
     Matching matching = get2ApproximateMatching(stream);
     // Outputting the information about the matching if required
-    if (config.progress >= SCALE) std::cout << "2 approximation: " << matching.matched_edges.size() << std::endl;
-    if (config.progress >= PHASE) std::cout << matching << std::endl;
+    if (config.progress_report >= SCALE) std::cout << "2 approximation size: " << matching.matched_edges.size() << std::endl;
+    if (config.progress_report >= PHASE) std::cout << matching << std::endl;
 
     float scale_limit = (epsilon * epsilon) / 64;
 
     for (float scale = 1.f/2.f; scale >= scale_limit; scale = scale * 1.f / 2.f) {
-        if (config.progress >= SCALE) std::cout << "Scale change: " << scale << "/" << scale_limit << std::endl;
+        if (config.progress_report >= SCALE) std::cout << "Scale change: " << scale << "/" << scale_limit << std::endl;
         float phase_limit = 144.f / (scale * epsilon);
 
         for (float phase = 1; phase <= phase_limit; phase++) {
 
-            if (config.progress >= PHASE) std::cout << "Scale: " << scale << "/" << scale_limit << " Phase: " << phase << "/" << phase_limit << std::endl;
+            if (config.progress_report >= PHASE) std::cout << "Scale: " << scale << "/" << scale_limit << " Phase: " << phase << "/" << phase_limit << std::endl;
             vector<AugmentingPath> disjoint_augmenting_paths = algPhase(stream, &matching, epsilon, scale, config);
             // TODO: Update
-            for (AugmentingPath path : disjoint_augmenting_paths) {
-                std::cout << "Path: " << std::endl;
-                std::cout << "\tTo match: ";
-                for (Edge edge : path.first) {
-                    std::cout << edge.first << "->" << edge.second << " ";
+            if (config.progress_report >= PHASE && ! disjoint_augmenting_paths.empty()) {
+                std::cout << "Augmenting paths found:" << std::endl;
+                for (AugmentingPath path : disjoint_augmenting_paths) {
+                    std::cout << "Path: " << std::endl;
+                    std::cout << "\tTo match: ";
+                    for (Edge edge : path.first) {
+                        std::cout << edge.first << "->" << edge.second << " ";
+                    }
+                    std::cout << std::endl;
+                    std::cout << "\tTo unmatch: ";
+                    for (Edge edge : path.second) {
+                        std::cout << edge.first << "->" << edge.second << " ";
+                    }
+                    std::cout << std::endl;
                 }
-                std::cout << std::endl;
-                std::cout << "\tTo unmatch: ";
-                for (Edge edge : path.second) {
-                    std::cout << edge.first << "->" << edge.second << " ";
-                }
-                std::cout << std::endl;
             }
 
             // TODO: Early finish testing
-            if (disjoint_augmenting_paths.empty()) {
+            if (config.optimisation_level >= SCALE_SKIP && disjoint_augmenting_paths.empty()) {
                 std::cout << "No augmenting paths found in phase, skipping remainder of the phase." << std::endl;
                 break;
             }
@@ -776,7 +808,7 @@ int main() {
     //Stream* stream = new StreamFromFile("example.txt");
     Stream* stream = new StreamFromMemory("test_graph.txt");
 
-    Matching matching = algorithm(stream, 0.99f);
+    Matching matching = algorithm(stream, 0.99f, 4);
     std::cout << matching << std::endl;
     std::cout << "Total number of passes: " << stream->number_of_passes << std::endl;
 
