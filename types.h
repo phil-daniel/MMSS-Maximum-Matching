@@ -25,7 +25,6 @@ enum OptimisationLevel {
     ALG_SKIP = 1, // Enables the Algorithm Skip optimisation
     SCALE_SKIP = 2, // Enables the Scale Skip optimisation
     PHASE_SKIP = 3, // Enables the Phase Skip optimisation
-    APPROX_MET = 4 // Enables the Approximation Met optimisation
 };
 
 struct Config {

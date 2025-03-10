@@ -288,7 +288,8 @@ void contractAndAugment(
     AvailableFreeNodes* available_free_nodes,
     vector<AugmentingPath>* disjoint_augmenting_paths,
     Matching* matching,
-    Config config
+    Config config,
+    int* operations_completed
 ) {
 
     unordered_map<FreeNodeStructure*, vector<Edge>> edges_in_structures;
@@ -336,6 +337,7 @@ void contractAndAugment(
                     pair.first->contract(edge_in_struct);
                     contractions_in_last_iteration += 1;
 
+                    *operations_completed += 1;
                     if (config.progress_report >= VERBOSE) {
                         std::cout << "ContractAndAugment - Contract: Struct " << pair.first->free_node_root->vertex_id;
                         std::cout << " on edge " << edge_in_struct.first << "->" << edge_in_struct.second << std::endl;
@@ -361,6 +363,8 @@ void contractAndAugment(
             if (node_of_u->isOuterVertex && node_of_v->isOuterVertex && ! (struct_of_u->removed || struct_of_v->removed)) {
                 augment(disjoint_augmenting_paths, edge, available_free_nodes, matching);
 
+                *operations_completed += 1;
+
                 if (config.progress_report >= VERBOSE) {
                     std::cout << "ContractAndAugment - Augment: Struct " << struct_of_u->free_node_root->vertex_id;
                     std::cout << " and Struct "<< struct_of_v->free_node_root->vertex_id;
@@ -376,7 +380,8 @@ void contractAndAugment(
 
 void backtrackStuckStructures(
     AvailableFreeNodes* available_free_nodes,
-    Config config
+    Config config,
+    int* operations_completed
 ) {
     for (FreeNodeStructure* structure : available_free_nodes->free_node_structures) {
         if (structure->on_hold || structure->modified || structure->removed || structure->working_node == nullptr) {
@@ -384,6 +389,8 @@ void backtrackStuckStructures(
         }
 
         structure->backtrack();
+
+        *operations_completed += 1;
         if (config.progress_report >= VERBOSE) {
             std::cout << "Backtracking: Struct " << structure->free_node_root->vertex_id << std::endl;
             if (structure->working_node == nullptr) std::cout << "Struct " << structure->free_node_root->vertex_id << " now inactive." << std::endl;
@@ -561,7 +568,8 @@ void extendActivePath(
     Matching* matching,
     AvailableFreeNodes* available_free_nodes,
     vector<AugmentingPath>* disjoint_augmenting_paths,
-    Config config
+    Config config,
+    int* operations_completed
 ) {
     Edge edge = stream->readStream();
     // edges are only -1 if we have reached the end of the stream.
@@ -630,6 +638,8 @@ void extendActivePath(
                     if (struct_of_v->getGraphNodeFromVertex(edge.second)->isOuterVertex) {
                         // both are outer vertices
                         struct_of_u->contract(edge);
+
+                        *operations_completed += 1;
                         if (config.progress_report >= VERBOSE) {
                             std::cout << "Contract: Struct " << struct_of_u->free_node_root->vertex_id;
                             std::cout << " on edge" << edge.first << "->" << edge.second << std::endl;
@@ -639,6 +649,8 @@ void extendActivePath(
             } else {
                 if (struct_of_v->getGraphNodeFromVertex(edge.second)->isOuterVertex) {
                     augment(disjoint_augmenting_paths, edge, available_free_nodes, matching);
+
+                    *operations_completed += 1;
                     if (config.progress_report >= VERBOSE) {
                         std::cout << "Augment: Struct " << struct_of_u->free_node_root->vertex_id;
                         std::cout << " and Struct "<< struct_of_v->free_node_root->vertex_id;
@@ -664,6 +676,8 @@ void extendActivePath(
             // TODO: Move check of corrected matched edge somewhere else?
             if (distance_to_u + 1 < distance_to_v && matching_using_v.first != -1) {
                 overtake(edge, matching_using_v, available_free_nodes, matching, config);
+
+                *operations_completed += 1;
             }
         }
 
@@ -693,6 +707,8 @@ vector<AugmentingPath> algPhase(
     matching->resetLabels();
 
     for (int pass_bundle = 0; pass_bundle < pass_bundles_max; pass_bundle++) {
+        int operations_completed = 0;
+
         if (config.progress_report >= PASS_BUNDLE) std::cout << "Pass bundle: " << pass_bundle << "/" << pass_bundles_max << std::endl;
         for (FreeNodeStructure* free_node_struct : available_free_nodes.free_node_structures) {
             if (free_node_struct->vertex_to_graph_node.size() >= path_limit) free_node_struct->on_hold = true;
@@ -700,14 +716,16 @@ vector<AugmentingPath> algPhase(
             free_node_struct->modified = false;
         }
 
-        extendActivePath(stream, matching, &available_free_nodes, &disjoint_augmenting_paths, config);
-        contractAndAugment(stream, &available_free_nodes, &disjoint_augmenting_paths, matching, config);
-        backtrackStuckStructures(&available_free_nodes, config);
+        extendActivePath(stream, matching, &available_free_nodes, &disjoint_augmenting_paths, config, &operations_completed);
+        contractAndAugment(stream, &available_free_nodes, &disjoint_augmenting_paths, matching, config, &operations_completed);
+        backtrackStuckStructures(&available_free_nodes, config, &operations_completed);
+
+        if (config.optimisation_level >= PHASE_SKIP && config.progress_report >= PASS_BUNDLE && operations_completed == 0) {
+            std::cout << "PHASE SKIP: No operations completed in the current pass bundle, skipping the remainder of the phase." << std::endl;
+            break;
+        }
 
     }
-
-    // TODO: REMOVE - TEMP TO CHECK REMAINING FREE NODES
-    std::cout << "Free Node Count: " << available_free_nodes.free_node_structures.size() << std::endl;
 
     return disjoint_augmenting_paths;
 }
@@ -752,7 +770,7 @@ Matching algorithm(
     else config.progress_report = static_cast<ProgressReport>(progress_report);
 
     if (optimisation_level < NO_OUTPUT) config.optimisation_level = NO_OPTIMISATION;
-    else if (optimisation_level > APPROX_MET) config.optimisation_level = APPROX_MET;
+    else if (optimisation_level > PHASE_SKIP) config.optimisation_level = PHASE_SKIP;
     else config.optimisation_level = static_cast<OptimisationLevel>(optimisation_level);
 
     // Computing a 2-approximate matching for the graph
@@ -771,8 +789,8 @@ Matching algorithm(
 
             if (config.progress_report >= PHASE) std::cout << "Scale: " << scale << "/" << scale_limit << " Phase: " << phase << "/" << phase_limit << std::endl;
             vector<AugmentingPath> disjoint_augmenting_paths = algPhase(stream, &matching, epsilon, scale, config);
-            // TODO: Update
-            if (config.progress_report >= PHASE && ! disjoint_augmenting_paths.empty()) {
+
+            if (config.progress_report >= VERBOSE && ! disjoint_augmenting_paths.empty()) {
                 std::cout << "Augmenting paths found:" << std::endl;
                 for (AugmentingPath path : disjoint_augmenting_paths) {
                     std::cout << "Path: " << std::endl;
@@ -789,9 +807,8 @@ Matching algorithm(
                 }
             }
 
-            // TODO: Early finish testing
-            if (config.optimisation_level >= SCALE_SKIP && disjoint_augmenting_paths.empty()) {
-                std::cout << "No augmenting paths found in phase, skipping remainder of the phase." << std::endl;
+            if (config.optimisation_level >= SCALE_SKIP && config.progress_report >= SCALE && disjoint_augmenting_paths.empty()) {
+                std::cout << "SCALE SKIP: No augmenting paths found in phase, skipping the remainder of the scale." << std::endl;
                 break;
             }
 
@@ -808,7 +825,7 @@ int main() {
     //Stream* stream = new StreamFromFile("example.txt");
     Stream* stream = new StreamFromMemory("test_graph.txt");
 
-    Matching matching = algorithm(stream, 0.99f, 4);
+    Matching matching = algorithm(stream, 0.5, 3, 3);
     std::cout << matching << std::endl;
     std::cout << "Total number of passes: " << stream->number_of_passes << std::endl;
 
