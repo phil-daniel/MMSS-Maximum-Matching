@@ -30,12 +30,9 @@ class GraphBlossom : public GraphNode {
         void deleteContents();
         void recursivelyAddOutsideBlossomToIn(GraphNode* node, Vertex vertex);
         AugmentingPath getBlossomAugmentation(
-            GraphNode* incoming_matched_node,
-            Vertex incoming_matched_vertex,
-            Vertex in_blossom_matched,
-            GraphNode* incoming_unmatched_node,
-            Vertex incoming_unmatched_vertex,
-            Vertex in_blossom_unmatched,
+            Vertex in_blossom,
+            Vertex out_blossom,
+            bool to_match,
             Matching* matching
         );
         friend std::ostream &operator<<(std::ostream &os, const GraphBlossom &blossom);
