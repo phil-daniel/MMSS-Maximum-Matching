@@ -357,7 +357,12 @@ void contractAndAugment(
         FreeNodeStructure* struct_of_v = available_free_nodes->getFreeNodeStructFromVertex(edge.second);
 
         // TODO: temp added nullptr handling here
-        if (struct_of_u != nullptr && struct_of_v != nullptr && struct_of_u != struct_of_v) {
+        if (
+            struct_of_u != nullptr && struct_of_v != nullptr &&
+            ! struct_of_u->removed && ! struct_of_v->removed &&
+            struct_of_u != struct_of_v
+        ) {
+
             GraphNode* node_of_u = struct_of_u->getGraphNodeFromVertex(edge.first);
             GraphNode* node_of_v = struct_of_v->getGraphNodeFromVertex(edge.second);
             if (node_of_u->isOuterVertex && node_of_v->isOuterVertex && ! (struct_of_u->removed || struct_of_v->removed)) {
@@ -541,10 +546,10 @@ void overtake(
             vertex_u->children.insert(vertex_v);
 
             available_free_nodes->removeNodeFromStruct(vertex_v, struct_of_u);
-            available_free_nodes->addNodeToStruct(vertex_v, vertex_u, struct_of_u);
+            available_free_nodes->addNodeToStruct(vertex_v, vertex_v, struct_of_u);
 
             GraphNode* old_working_node = struct_of_v->working_node;
-            if (struct_of_v->getGraphNodeFromVertex(old_working_node->vertex_id) == nullptr) {
+            if (old_working_node != nullptr && struct_of_v->getGraphNodeFromVertex(old_working_node->vertex_id) == nullptr) {
                 struct_of_v->working_node = parent_of_v_in_struct_v;
                 struct_of_u->working_node = old_working_node;
             }
@@ -825,7 +830,7 @@ int main() {
     //Stream* stream = new StreamFromFile("example.txt");
     Stream* stream = new StreamFromMemory("test_graph.txt");
 
-    Matching matching = algorithm(stream, 0.5, 3, 3);
+    Matching matching = algorithm(stream, 0.75, 3, 3);
     std::cout << matching << std::endl;
     std::cout << "Total number of passes: " << stream->number_of_passes << std::endl;
 
