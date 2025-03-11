@@ -50,9 +50,7 @@ void updateChildLabels(GraphNode* parent_matched_vertex, int new_label, Matching
         vector<GraphNode*> new_level = {};
         for (GraphNode* node : current_level) {
             for (GraphNode* child : node->children) {
-                // TODO: Should only have 1 child in for a matched edge.
 
-                // TODO: double check this logic is correct especially for blossoms
                 Edge matched_edge = make_pair(child->parent_index, child->vertex_id);
                 matching->setLabel(matched_edge, new_label);
                 new_label++;
@@ -277,11 +275,9 @@ void contractAndAugment(
     // edges are only -1 if we have reached the end of the stream.
     while (edge.first != -1) {
 
-        // TODO: Error handling for nullptr
         FreeNodeStructure* struct_of_u = available_free_nodes->getFreeNodeStructFromVertex(edge.first);
         FreeNodeStructure* struct_of_v = available_free_nodes->getFreeNodeStructFromVertex(edge.second);
 
-        // TODO: temp added nullptr handling here
         if (
             struct_of_u != nullptr && struct_of_v != nullptr &&
             ! struct_of_u->removed && ! struct_of_v->removed &&
@@ -755,7 +751,7 @@ int main() {
     //Stream* stream = new StreamFromFile("example.txt");
     Stream* stream = new StreamFromMemory("test_graph.txt");
 
-    Matching matching = algorithm(stream, 0.25, 3, 3);
+    Matching matching = algorithm(stream, 0.75, 3, 3);
     std::cout << matching << std::endl;
     std::cout << "Total number of passes: " << stream->number_of_passes << std::endl;
 

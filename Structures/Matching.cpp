@@ -83,12 +83,12 @@ void Matching::verifyMatching() {
     for (Edge edge : matched_edges) {
         if (used_vertices.find(edge.first) != used_vertices.end()) {
             Edge used_in = vertex_to_matched_edge[edge.first];
-            std::cout << "ERROR: Vertex " << edge.first << " of " << edge.first << "->" << edge.second << " already used in " << used_in.first << "->" << used_in.second << std::endl;
+            std::cout << "ERROR: Vertex " << edge.first << " of " << edge.first << "->" << edge.second << " already used in " << std::endl;
             exit(1);
         }
         if (used_vertices.find(edge.second) != used_vertices.end()) {
             Edge used_in = vertex_to_matched_edge[edge.second];
-            std::cout << "ERROR: Vertex " << edge.second << " of " << edge.first << "->" << edge.second << " already used in " << used_in.first << "->" << used_in.second << std::endl;
+            std::cout << "ERROR: Vertex " << edge.second << " of " << edge.first << "->" << edge.second << " already used in " << std::endl;
             exit(1);
         }
 

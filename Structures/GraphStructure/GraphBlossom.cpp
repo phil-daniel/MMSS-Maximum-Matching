@@ -111,7 +111,7 @@ AugmentingPath GraphBlossom::getBlossomAugmentation(
     if (in_pos == out_pos) {
         GraphBlossom* blossom = dynamic_cast<GraphBlossom *>(nodesInOrder[in_pos]);
 
-        return blossom->getBlossomAugmentation2(
+        return blossom->getBlossomAugmentation(
             in_vertex,
             out_vertex,
             add_to_matching,
@@ -119,37 +119,12 @@ AugmentingPath GraphBlossom::getBlossomAugmentation(
         );
     }
 
-
-    int in_pos_plus_one = (in_pos + 1) % nodesInOrder.size();
-    int in_pos_minus_one = (in_pos - 1 + nodesInOrder.size()) % nodesInOrder.size();
-
-    Vertex in_plus_one_vertex = nodesInOrder[in_pos_plus_one]->getVertexInsideConnectedByEdge(nodesInOrder[in_pos]);
-    Vertex in_minus_one_vertex = nodesInOrder[in_pos_minus_one]->getVertexInsideConnectedByEdge(nodesInOrder[in_pos]);
-
-    // If our start node is a blossom, we need to find the correct vertices in and out of the blossom for the forward and backwards edges.
-    Vertex forwards_start_edge_vertex = nodesInOrder[in_pos]->getVertexInsideConnectedByEdge(nodesInOrder[in_plus_one_vertex]);
-    Vertex backwards_start_edge_vertex = nodesInOrder[in_pos]->getVertexInsideConnectedByEdge(nodesInOrder[in_minus_one_vertex]);
-
-    Edge forwards_edge = make_pair(forwards_start_edge_vertex, in_plus_one_vertex);
-    Edge backwards_edge = make_pair(backwards_start_edge_vertex, in_plus_one_vertex);
-
+    // Finding which direction around the blossom cycle gives us an even-length cycle
     int direction = 1;
-    // If we want to match the first edge, but the forwards edge is in the matching, we go backwards
-    if (add_to_matching && matching->isInMatching(forwards_edge)) {
-        direction = -1;
-    }
-    // If we want to unmatch the first edge, but the forwards edge is not in the matching, we go backwards
-    else if (! add_to_matching && ! matching->isInMatching(forwards_edge)) {
-        direction = -1;
-    }
-
-    // If both the forwards and backwards edges are unmatched and we want to match, we need to find the even length path.
-    if (! matching->isInMatching(forwards_edge) && ! matching->isInMatching(backwards_edge) && add_to_matching) {
-        int forwards_dist;
-        if (in_pos > out_pos) forwards_dist = out_pos + nodesInOrder.size() - in_pos;
-        else forwards_dist = out_pos - in_pos;
-        if (forwards_dist % 2 != 0) direction = -1;
-    }
+    int forward_dist;
+    if (in_pos > out_pos) forward_dist = out_pos + nodesInOrder.size() - in_pos;
+    else forward_dist = out_pos - in_pos;
+    if (forward_dist % 2 != 0) direction = -1;
 
     // Handling if the first node is a blossom and we have to add the nodes in the matching into the blossom.
     if (nodesInOrder[in_pos]->isBlossom) {
@@ -158,7 +133,7 @@ AugmentingPath GraphBlossom::getBlossomAugmentation(
         int next_pos = (in_pos + direction + nodesInOrder.size()) % nodesInOrder.size();
         int inner_out_vertex = blossom->getVertexInsideConnectedByEdge(nodesInOrder[next_pos]);
 
-        AugmentingPath inner_augmentation = blossom->getBlossomAugmentation2(
+        AugmentingPath inner_augmentation = blossom->getBlossomAugmentation(
             in_vertex,
             inner_out_vertex,
             add_to_matching,
@@ -202,7 +177,7 @@ AugmentingPath GraphBlossom::getBlossomAugmentation(
                 inner_out_vertex = out_vertex;
             }
 
-            AugmentingPath inner_augmentation = blossom->getBlossomAugmentation2(
+            AugmentingPath inner_augmentation = blossom->getBlossomAugmentation(
                 inner_in_vertex,
                 inner_out_vertex,
                 ! add_to_matching,
