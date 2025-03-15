@@ -18,6 +18,7 @@ class Matching {
         void removeEdge(Edge edge);
         void removeEdgeAndItsVertices(Edge edge);
         bool isInMatching(Edge edge);
+        bool isVertexUsedInMatching(Vertex vertex);
         Edge getMatchedEdgeFromVertex(Vertex vertex);
         int getLabel(Edge edge);
         void setLabel(Edge edge, int label);

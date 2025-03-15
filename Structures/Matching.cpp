@@ -48,6 +48,13 @@ bool Matching::isInMatching(Edge edge) {
     return true;
 }
 
+bool Matching::isVertexUsedInMatching(Vertex vertex) {
+    if (vertex_to_matched_edge.find(vertex) == vertex_to_matched_edge.end()) {
+        return false;
+    }
+    return true;
+}
+
 Edge Matching::getMatchedEdgeFromVertex(Vertex vertex) {
     if (vertex_to_matched_edge.find(vertex) == vertex_to_matched_edge.end()) {
         // If it's not involved in a matching return (-1, -1), i.e. an impossible edge.
@@ -82,12 +89,10 @@ void Matching::verifyMatching() {
     set<Vertex> used_vertices = {};
     for (Edge edge : matched_edges) {
         if (used_vertices.find(edge.first) != used_vertices.end()) {
-            Edge used_in = vertex_to_matched_edge[edge.first];
             std::cout << "ERROR: Vertex " << edge.first << " of " << edge.first << "->" << edge.second << " already used in " << std::endl;
             exit(1);
         }
         if (used_vertices.find(edge.second) != used_vertices.end()) {
-            Edge used_in = vertex_to_matched_edge[edge.second];
             std::cout << "ERROR: Vertex " << edge.second << " of " << edge.first << "->" << edge.second << " already used in " << std::endl;
             exit(1);
         }

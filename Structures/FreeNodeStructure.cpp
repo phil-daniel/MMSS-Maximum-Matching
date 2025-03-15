@@ -82,12 +82,8 @@ void FreeNodeStructure::contract(
             for (Vertex vertex : blossom_node->verticesInBlossom) {
                 addVertexToStruct(vertex, new_blossom);
             }
-            // for (pair<Vertex, GraphNode*> key_value : blossom_node->nodeOfVertexInBlossom) {
-            //     new_blossom->nodeOfVertexInBlossom[key_value.first] = blossom_node;
-            // }
         } else {
             addVertexToStruct(current_pos->vertex_id, new_blossom);
-            // new_blossom->nodeOfVertexInBlossom[current_pos->vertex_id] = current_pos;
         }
 
         if (current_pos == working_node) {
@@ -119,12 +115,8 @@ void FreeNodeStructure::contract(
             for (Vertex vertex : blossom_node->verticesInBlossom) {
                 addVertexToStruct(vertex, new_blossom);
             }
-            // for (pair<Vertex, GraphNode*> key_value : blossom_node->nodeOfVertexInBlossom) {
-            //     new_blossom->nodeOfVertexInBlossom[key_value.first] = blossom_node;
-            // }
         } else {
             addVertexToStruct(node->vertex_id, new_blossom);
-            // new_blossom->nodeOfVertexInBlossom[current_pos->vertex_id] = current_pos;
         }
 
         if (node == working_node) {
@@ -146,7 +138,7 @@ void FreeNodeStructure::contract(
 
     new_blossom->vertex_id = lca->vertex_id;
 
-    // Updating vertex_to_graph_node to link all of the vertices in the blossom to the new GraphBlossom structure.
+    // Updating vertex_to_graph_node to link all the vertices in the blossom to the new GraphBlossom structure.
     for (Vertex vertex_id : new_blossom->verticesInBlossom) {
         vertex_to_graph_node[vertex_id] = new_blossom;
     }
@@ -155,12 +147,14 @@ void FreeNodeStructure::contract(
         working_node = new_blossom;
     }
 
-    // Settings whether this node is an inner or outer node.
-    if (new_blossom->parent == nullptr) {
-        new_blossom->isOuterVertex = true;
-    } else {
-        new_blossom->isOuterVertex = ! new_blossom->parent->isOuterVertex;
-    }
+    // // Settings whether this node is an inner or outer node.
+    // if (new_blossom->parent == nullptr) {
+    //     new_blossom->isOuterVertex = true;
+    // } else {
+    //     new_blossom->isOuterVertex = ! new_blossom->parent->isOuterVertex;
+    // }
+    // Blossoms can only occur at outer vertices.
+    new_blossom->isOuterVertex = true;
 
     this->modified = true;
 }
@@ -181,9 +175,7 @@ void FreeNodeStructure::backtrack() {
     } else {
         working_node = nullptr;
     }
-
-
-
+    
 }
 
 void FreeNodeStructure::deleteStructure() {
