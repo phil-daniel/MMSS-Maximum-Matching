@@ -13,8 +13,18 @@ void AvailableFreeNodes::addNodeToStruct(GraphNode *node, GraphNode* main_node, 
         GraphBlossom* blossom = dynamic_cast<GraphBlossom *>(node);
         addBlossomToStruct(blossom, main_node, structure);
     } else {
-        structure->addVertexToStruct(node->vertex_id, main_node);
         setFreeNodeStructFromVertex(node->vertex_id, structure);
+    }
+
+    if (node == main_node) {
+        if (node->isBlossom) {
+            GraphBlossom* blossom = dynamic_cast<GraphBlossom *>(node);
+            for (Vertex vertex : blossom->verticesInBlossom) {
+                structure->addVertexToStruct(vertex, main_node);
+            }
+        } else {
+            structure->addVertexToStruct(node->vertex_id, main_node);
+        }
     }
 
     // Recursively adding every child from the structure as well
