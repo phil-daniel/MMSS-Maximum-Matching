@@ -9,23 +9,21 @@ using namespace std;
 class AvailableFreeNodes {
     // Variables
     public:
+        // List containing all the current free node structures.
         vector<FreeNodeStructure*> free_node_structures;
     private:
-        // Uses public getter/setter methods to prevent problems if vertex isn't part of a structure.
+        // Dictionary matching vertex_ids to their corresponding free node structures.
         unordered_map<Vertex, FreeNodeStructure*> vertex_to_struct;
-
 
     // Functions
     public:
+        // Uses public getter/setter methods for vertex_to_struct to prevent problems if vertex isn't part of a structure.
         FreeNodeStructure* getFreeNodeStructFromVertex(Vertex vertex);
         void setFreeNodeStructFromVertex(Vertex vertex, FreeNodeStructure* structure);
         void removeNodeFromStruct(GraphNode* node, FreeNodeStructure* structure);
         void addNodeToStruct(GraphNode* node, GraphNode* main_node, FreeNodeStructure* structure);
         FreeNodeStructure* createNewStruct(GraphVertex* vertex);
         void deleteStructures() const;
-    private:
-        void removeBlossomFromStruct(GraphBlossom* blossom, FreeNodeStructure* structure);
-        void addBlossomToStruct(GraphBlossom* blossom, GraphNode* main_node, FreeNodeStructure* structure);
 };
 
 #endif //AVAILABLEFREENODES_H

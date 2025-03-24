@@ -18,7 +18,7 @@ class FreeNodeStructure {
     public:
         bool on_hold = false;
         bool modified = false;
-        bool removed = false;
+        bool used = false;
         GraphNode* working_node;
         GraphNode* free_node_root;
         unordered_map<Vertex, GraphNode*> vertex_to_graph_node;

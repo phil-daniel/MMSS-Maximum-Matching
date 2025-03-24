@@ -23,6 +23,7 @@ void FreeNodeStructure::removeVertexFromStruct(Vertex vertex) {
 void FreeNodeStructure::contract(
     Edge unmatched_arc
 ) {
+
     GraphNode* node_of_u = getGraphNodeFromVertex(unmatched_arc.first);
     GraphNode* node_of_v = getGraphNodeFromVertex(unmatched_arc.second);
 
@@ -157,12 +158,13 @@ void FreeNodeStructure::contract(
     new_blossom->isOuterVertex = true;
 
     this->modified = true;
+
 }
 
 void FreeNodeStructure::backtrack() {
     // If the structure is on hold or has been modified then it isn't stuck and hence doesn't
     // need modifying.
-    if (on_hold || modified || removed) {
+    if (on_hold || modified || used) {
         return;
     }
 
@@ -175,7 +177,7 @@ void FreeNodeStructure::backtrack() {
     } else {
         working_node = nullptr;
     }
-    
+
 }
 
 void FreeNodeStructure::deleteStructure() {

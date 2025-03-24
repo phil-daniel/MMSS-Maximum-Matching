@@ -205,8 +205,8 @@ void augment(
     GraphNode *graph_node_of_v = struct_of_v->getGraphNodeFromVertex(unmatched_arc.second);
     AugmentingPath new_augmentation = getAugmentation(graph_node_of_u, graph_node_of_v, unmatched_arc.first, unmatched_arc.second, matching);
 
-    struct_of_u->removed = true;
-    struct_of_v->removed = true;
+    struct_of_u->used = true;
+    struct_of_v->used = true;
 
     disjoint_augmenting_paths->emplace_back(new_augmentation);
 }
@@ -230,10 +230,10 @@ void contractAndAugment(
         FreeNodeStructure* struct_of_u = available_free_nodes->getFreeNodeStructFromVertex(edge.first);
         FreeNodeStructure* struct_of_v = available_free_nodes->getFreeNodeStructFromVertex(edge.second);
 
-        // If the two vertices are in the same non-removed structure.
+        // If the two vertices are in the same non-used structure.
         if (
             struct_of_u != nullptr && struct_of_u == struct_of_v &&
-            ! struct_of_u->removed && ! struct_of_v->removed
+            ! struct_of_u->used && ! struct_of_v->used
         ) {
             GraphNode* node_of_u = struct_of_u->getGraphNodeFromVertex(edge.first);
             GraphNode* node_of_v = struct_of_u->getGraphNodeFromVertex(edge.second);
@@ -267,7 +267,6 @@ void contractAndAugment(
 
                     int blossom_parent_id = new_blossom->parent_index;
                     int parent_label = matching->getLabel(matching->getMatchedEdgeFromVertex(blossom_parent_id));
-                    // updateChildLabels(new_blossom, parent_label, matching);
                     for (GraphNode* child : new_blossom->children) {
                         updateChildLabels(child, parent_label+1, matching);
                     }
@@ -293,13 +292,13 @@ void contractAndAugment(
 
         if (
             struct_of_u != nullptr && struct_of_v != nullptr &&
-            ! struct_of_u->removed && ! struct_of_v->removed &&
+            ! struct_of_u->used && ! struct_of_v->used &&
             struct_of_u != struct_of_v
         ) {
 
             GraphNode* node_of_u = struct_of_u->getGraphNodeFromVertex(edge.first);
             GraphNode* node_of_v = struct_of_v->getGraphNodeFromVertex(edge.second);
-            if (node_of_u->isOuterVertex && node_of_v->isOuterVertex && ! (struct_of_u->removed || struct_of_v->removed)) {
+            if (node_of_u->isOuterVertex && node_of_v->isOuterVertex && ! (struct_of_u->used || struct_of_v->used)) {
                 augment(disjoint_augmenting_paths, edge, available_free_nodes, matching);
 
                 *operations_completed += 1;
@@ -323,7 +322,7 @@ void backtrackStuckStructures(
     int* operations_completed
 ) {
     for (FreeNodeStructure* structure : available_free_nodes->free_node_structures) {
-        if (structure->on_hold || structure->modified || structure->removed || structure->working_node == nullptr) {
+        if (structure->on_hold || structure->modified || structure->used || structure->working_node == nullptr) {
             continue;
         }
 
@@ -455,7 +454,6 @@ void overtake(
             GraphNode* parent_of_v_in_struct_v = vertex_v->parent;
             parent_of_v_in_struct_v->children.erase(vertex_v);
 
-            // TODO: Check these correct
             if (parent_of_v_in_struct_v->isBlossom) {
                 GraphBlossom* parent_blossom = dynamic_cast<GraphBlossom *>(parent_of_v_in_struct_v);
                 parent_blossom->outsideBlossomToIn.erase(vertex_v);
@@ -464,14 +462,12 @@ void overtake(
             if (vertex_v->isBlossom) {
                 GraphBlossom* blossom_v = dynamic_cast<GraphBlossom *>(vertex_v);
                 blossom_v->recursivelyAddOutsideBlossomToIn(vertex_u, unmatched_arc.second);
-                //blossom_v->outsideBlossomToIn[vertex_u] = unmatched_arc.second;
                 blossom_v->outsideBlossomToIn.erase(parent_of_v_in_struct_v);
             }
 
             if (vertex_u->isBlossom) {
                 GraphBlossom* blossom_u = dynamic_cast<GraphBlossom *>(vertex_u);
                 blossom_u->recursivelyAddOutsideBlossomToIn(vertex_v, unmatched_arc.first);
-                //blossom_u->outsideBlossomToIn[vertex_v] = unmatched_arc.first;
             }
 
 
@@ -499,6 +495,7 @@ void overtake(
                 std::cout << " on Struct "<< struct_of_v->free_node_root->vertex_id;
                 std::cout << ", edge " << unmatched_arc.first << "->" << unmatched_arc.second << std::endl;
             }
+
         }
     }
 }
@@ -545,8 +542,8 @@ void extendActivePath(
             edge = stream->readStream();
             continue;
         }
-        // Case 1 - If we have "removed" one of the vertices from the graph, we skip this edge.
-        if (struct_of_u->removed || (struct_of_v != nullptr && struct_of_v->removed) ) {
+        // Case 1 - If we have "used" one of the vertices from the graph, we skip this edge.
+        if (struct_of_u->used || (struct_of_v != nullptr && struct_of_v->used) ) {
             edge = stream->readStream();
             continue;
         }
@@ -652,6 +649,9 @@ vector<AugmentingPath> algPhase(
 
     matching->resetLabels();
 
+    // TODO: REMOVE REPORT
+    int pass_count = 1;
+
     for (int pass_bundle = 0; pass_bundle < pass_bundles_max; pass_bundle++) {
         // Used to count the number of operations completed in a pass bundle, part of the Phase Skip optimisation
         int operations_completed = 0;
@@ -672,6 +672,9 @@ vector<AugmentingPath> algPhase(
         // Backtracks any structures which have not be used.
         backtrackStuckStructures(&available_free_nodes, config, &operations_completed);
 
+        // TODO: REMOVE REPORT
+        pass_count += 1;
+
         // Phase Skip optimisation - If we have not completed any overtake, contract, augment or backtrack operations,
         // skip the remaining pass bundles of the current phase.
         if (config.optimisation_level >= PHASE_SKIP && operations_completed == 0) {
@@ -680,6 +683,12 @@ vector<AugmentingPath> algPhase(
         }
 
     }
+
+    // TODO: REMOVE REPORT
+    ofstream report;
+    report.open("report.txt", std::ios_base::app);
+    report << pass_count << "/" << pass_bundles_max << ",";
+    report.close();
 
     return disjoint_augmenting_paths;
 }
@@ -713,6 +722,7 @@ Matching getMMSSApproxMaximumMatching(
     int progress_report = 3,
     int optimisation_level = 3
 ) {
+
     // Setting up the config structure.
     Config config;
     if (progress_report < NO_OUTPUT) config.progress_report = NO_OUTPUT;
@@ -726,22 +736,35 @@ Matching getMMSSApproxMaximumMatching(
     // Greedy matching, giving a 2 approximation
     Matching matching = get2ApproximateMatching(stream);
 
+    // TODO: REMOVE REPORT
+    ofstream report;
+    report.open("report.txt", std::ios_base::app);
+    report << "0, 0/0, 0/0, " << matching.matched_edges.size() << std::endl;
+    int scale_count = 0;
+    report.close();
+
     // Outputting relevant information about the initial matching if required.
     if (config.progress_report >= SCALE) std::cout << "2 approximation size: " << matching.matched_edges.size() << std::endl;
-    if (config.progress_report >= VERBOSE) std::cout << matching << std::endl;
+    if (config.progress_report >= PASS_BUNDLE) std::cout << matching << std::endl;
 
     // Iterating through each scale up to the limit.
     float scale_limit = (epsilon * epsilon) / 64;
     for (float scale = 0.5f; scale >= scale_limit; scale = scale * 0.5f) {
         if (config.progress_report >= SCALE) std::cout << "Scale change: " << scale << "/" << scale_limit << std::endl;
 
-        // TODO: TEMP
-        if (scale <= 0.00195312) config.progress_report = VERBOSE;
+        // TODO: REMOVE REPORT
+        scale_count += 1;
 
         // Iterating through each phase in the scale.
         float phase_limit = 144.f / (scale * epsilon);
         for (float phase = 1; phase <= phase_limit; phase++) {
             if (config.progress_report >= PHASE) std::cout << "Scale: " << scale << "/" << scale_limit << " Phase: " << phase << "/" << phase_limit << std::endl;
+
+            // TODO: REMOVE REPORT
+            ofstream report;
+            report.open("report.txt", std::ios_base::app);
+            report << scale_count << ", " << phase << "/" << phase_limit << ", ";
+            report.close();
 
             // Running a single phase of the algorithm to find disjoint augmenting paths.
             vector<AugmentingPath> disjoint_augmenting_paths = algPhase(stream, &matching, epsilon, scale, config);
@@ -767,6 +790,10 @@ Matching getMMSSApproxMaximumMatching(
             // Scale Skip optimisation - if we find no disjoint augmenting paths after a phase, we skip the current scale.
             if (config.optimisation_level >= SCALE_SKIP && disjoint_augmenting_paths.empty()) {
                 if (config.progress_report >= SCALE) std::cout << "SCALE SKIP: No augmenting paths found in phase, skipping the remainder of the scale." << std::endl;
+                // TODO: REMOVE REPORT
+                report.open("report.txt", std::ios_base::app);
+                report << matching.matched_edges.size() << std::endl;
+                report.close();
                 break;
             }
 
@@ -774,6 +801,11 @@ Matching getMMSSApproxMaximumMatching(
             matching.augmentMatching(&disjoint_augmenting_paths);
             // Checking the matching is valid
             matching.verifyMatching();
+
+            // TODO: REMOVE REPORT
+            report.open("report.txt", std::ios_base::app);
+            report << matching.matched_edges.size() << std::endl;
+            report.close();
         }
     }
 
@@ -782,10 +814,16 @@ Matching getMMSSApproxMaximumMatching(
 
 int main() {
 
+    // TODO: REMOVE REPORT
+    ofstream report;
+    report.open("report.txt");
+    report << std::endl;
+    report.close();
+
     //Stream* stream = new StreamFromFile("example.txt");
     Stream* stream = new StreamFromMemory("test_graph.txt");
 
-    Matching matching = getMMSSApproxMaximumMatching(stream, 0.25, 3, 3);
+    Matching matching = getMMSSApproxMaximumMatching(stream, 0.75, 3, 3);
     std::cout << matching << std::endl;
     std::cout << "Total number of passes: " << stream->number_of_passes << std::endl;
 

@@ -1,6 +1,8 @@
 #ifndef MATCHING_H
 #define MATCHING_H
 
+#include <set>
+
 #include "../types.h"
 
 class Matching {
