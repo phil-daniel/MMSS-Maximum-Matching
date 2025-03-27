@@ -9,15 +9,15 @@
 class GraphBlossom : public GraphNode {
     // Variables
     public:
-        set<GraphNode*> nodesInBlossom;
+        set<GraphNode*> nodes_in_blossom;
     // TODO: Change this into a map? -> vertices to nodes within the blossom?
-        set<Vertex> verticesInBlossom;
-        vector<GraphNode*> nodesInOrder;
+        set<Vertex> vertices_in_blossom;
+        vector<GraphNode*> nodes_in_order;
         // An unordered map which takes an input of a node of the parent of the blossom and outputs the node within the blossom
         // that it is connected to.
-        unordered_map<GraphNode*, Vertex> outsideBlossomToIn;
+        unordered_map<GraphNode*, Vertex> outside_blossom_to_in;
         // An unordered map which takes input of a vertex in the blossom and outputs the node in which that vertex is in.
-        unordered_map<Vertex, GraphNode*> nodeOfVertexInBlossom;
+        unordered_map<Vertex, GraphNode*> vertex_to_node_in_blossom;
 
     // Functions
     private:

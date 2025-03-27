@@ -8,7 +8,7 @@ void AvailableFreeNodes::addNodeToStruct(GraphNode *node, GraphNode* main_node, 
     if (node->isBlossom) {
         // If we have a blossom we recursively call addNodeToStruct for each node within the blossom.
         GraphBlossom* blossom = dynamic_cast<GraphBlossom *>(node);
-        for (GraphNode* node : blossom->nodesInBlossom) {
+        for (GraphNode* node : blossom->nodes_in_blossom) {
             addNodeToStruct(node, main_node, structure);
         }
     } else {
@@ -25,7 +25,7 @@ void AvailableFreeNodes::addNodeToStruct(GraphNode *node, GraphNode* main_node, 
             // If the node is a non-trivial blossom (i.e. not a vertex) we need to add each vertex involved in
             // the blossom, rather than just the vertex_id of the node.
             GraphBlossom* blossom = dynamic_cast<GraphBlossom *>(node);
-            for (Vertex vertex : blossom->verticesInBlossom) {
+            for (Vertex vertex : blossom->vertices_in_blossom) {
                 structure->addVertexToStruct(vertex, main_node);
             }
         } else {
@@ -43,7 +43,7 @@ void AvailableFreeNodes::removeNodeFromStruct(GraphNode* node, FreeNodeStructure
     if (node->isBlossom) {
         // If the node is a blossom, we recursively remove each item within the blossom.
         GraphBlossom* blossom = dynamic_cast<GraphBlossom*>(node);
-        for (GraphNode* node : blossom->nodesInBlossom) {
+        for (GraphNode* node : blossom->nodes_in_blossom) {
             removeNodeFromStruct(node, structure);
         }
     } else {

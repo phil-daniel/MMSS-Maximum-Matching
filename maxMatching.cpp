@@ -16,6 +16,12 @@
 
 using namespace std;
 
+// TODO: REPORT REMOVE
+int overtake_count = 0;
+int augment_count = 0;
+int contract_count = 0;
+int backtrack_count = 0;
+
 vector<Edge> getLeafToRootPath(
     GraphNode* leaf
 ) {
@@ -209,6 +215,9 @@ void augment(
     struct_of_v->used = true;
 
     disjoint_augmenting_paths->emplace_back(new_augmentation);
+
+    // TODO: REPORT REMOVE
+    augment_count += 1;
 }
 
 void contractAndAugment(
@@ -277,6 +286,9 @@ void contractAndAugment(
                         std::cout << "ContractAndAugment - Contract: Struct " << pair.first->free_node_root->vertex_id;
                         std::cout << " on edge " << edge_in_struct.first << "->" << edge_in_struct.second << std::endl;
                     }
+
+                    // TODO: REPORT REMOVE
+                    contract_count += 1;
                 }
             }
         }
@@ -333,6 +345,9 @@ void backtrackStuckStructures(
             std::cout << "Backtracking: Struct " << structure->free_node_root->vertex_id << std::endl;
             if (structure->working_node == nullptr) std::cout << "Struct " << structure->free_node_root->vertex_id << " now inactive." << std::endl;
         }
+
+        // TODO: REPORT REMOVE
+        backtrack_count += 1;
     }
 }
 
@@ -412,20 +427,20 @@ void overtake(
             // TODO: Check these are correct
             if (current_parent_of_v->isBlossom) {
                 GraphBlossom* parent_blossom = dynamic_cast<GraphBlossom *>(current_parent_of_v);
-                parent_blossom->outsideBlossomToIn.erase(vertex_v);
+                parent_blossom->outside_blossom_to_in.erase(vertex_v);
             }
 
             if (vertex_v->isBlossom) {
                 GraphBlossom* blossom_v = dynamic_cast<GraphBlossom *>(vertex_v);
                 blossom_v->recursivelyAddOutsideBlossomToIn(vertex_u, unmatched_arc.second);
-                //blossom_v->outsideBlossomToIn[vertex_u] = unmatched_arc.second;
-                blossom_v->outsideBlossomToIn.erase(current_parent_of_v);
+                //blossom_v->outside_blossom_to_in[vertex_u] = unmatched_arc.second;
+                blossom_v->outside_blossom_to_in.erase(current_parent_of_v);
             }
 
             if (vertex_u->isBlossom) {
                 GraphBlossom* blossom_u = dynamic_cast<GraphBlossom *>(vertex_u);
                 blossom_u->recursivelyAddOutsideBlossomToIn(vertex_v, unmatched_arc.first);
-                //blossom_u->outsideBlossomToIn[vertex_v] = unmatched_arc.first;
+                //blossom_u->outside_blossom_to_in[vertex_v] = unmatched_arc.first;
             }
 
             // Updating vertex v to now be parented by vertex u
@@ -456,13 +471,13 @@ void overtake(
 
             if (parent_of_v_in_struct_v->isBlossom) {
                 GraphBlossom* parent_blossom = dynamic_cast<GraphBlossom *>(parent_of_v_in_struct_v);
-                parent_blossom->outsideBlossomToIn.erase(vertex_v);
+                parent_blossom->outside_blossom_to_in.erase(vertex_v);
             }
 
             if (vertex_v->isBlossom) {
                 GraphBlossom* blossom_v = dynamic_cast<GraphBlossom *>(vertex_v);
                 blossom_v->recursivelyAddOutsideBlossomToIn(vertex_u, unmatched_arc.second);
-                blossom_v->outsideBlossomToIn.erase(parent_of_v_in_struct_v);
+                blossom_v->outside_blossom_to_in.erase(parent_of_v_in_struct_v);
             }
 
             if (vertex_u->isBlossom) {
@@ -587,6 +602,9 @@ void extendActivePath(
                         std::cout << " on edge" << edge.first << "->" << edge.second << std::endl;
                     }
 
+                    // TODO: REPORT REMOVE
+                    contract_count += 1;
+
                 }
             } else {
                 // u and v belong to different structures
@@ -622,6 +640,9 @@ void extendActivePath(
                 overtake(edge, matching_using_v, available_free_nodes, matching, config);
 
                 *operations_completed += 1;
+
+                // TODO: REPORT REMOVE:
+                overtake_count += 1;
             }
         }
 
@@ -651,6 +672,10 @@ vector<AugmentingPath> algPhase(
 
     // TODO: REMOVE REPORT
     int pass_count = 1;
+    augment_count = 0;
+    backtrack_count = 0;
+    overtake_count = 0;
+    contract_count = 0;
 
     for (int pass_bundle = 0; pass_bundle < pass_bundles_max; pass_bundle++) {
         // Used to count the number of operations completed in a pass bundle, part of the Phase Skip optimisation
@@ -739,6 +764,7 @@ Matching getMMSSApproxMaximumMatching(
     // TODO: REMOVE REPORT
     ofstream report;
     report.open("report.txt", std::ios_base::app);
+    report << "Scale, Phase, Pass Bundle, Matching Size, Overtakes, Contracts, Augments, Backtracks, Path Lengths" << std::endl;
     report << "0, 0/0, 0/0, " << matching.matched_edges.size() << std::endl;
     int scale_count = 0;
     report.close();
@@ -756,7 +782,7 @@ Matching getMMSSApproxMaximumMatching(
         scale_count += 1;
 
         // Iterating through each phase in the scale.
-        float phase_limit = 144.f / (scale * epsilon);
+        float phase_limit = std::ceil(144.f / (scale * epsilon));
         for (float phase = 1; phase <= phase_limit; phase++) {
             if (config.progress_report >= PHASE) std::cout << "Scale: " << scale << "/" << scale_limit << " Phase: " << phase << "/" << phase_limit << std::endl;
 
@@ -792,8 +818,22 @@ Matching getMMSSApproxMaximumMatching(
                 if (config.progress_report >= SCALE) std::cout << "SCALE SKIP: No augmenting paths found in phase, skipping the remainder of the scale." << std::endl;
                 // TODO: REMOVE REPORT
                 report.open("report.txt", std::ios_base::app);
-                report << matching.matched_edges.size() << std::endl;
+                report << matching.matched_edges.size() << "," << overtake_count << "," << contract_count << "," << augment_count << "," << backtrack_count << ",";
+
+                for (AugmentingPath path : disjoint_augmenting_paths) {
+                    std::set<Edge> unique;
+                    for (Edge edge : path.first) {
+                        unique.insert(edge);
+                    }
+                    for (Edge edge : path.second) {
+                        unique.insert(edge);
+                    }
+                    report << unique.size() << " ";
+                }
+                report << std::endl;
+
                 report.close();
+                // REPORT END
                 break;
             }
 
@@ -804,8 +844,22 @@ Matching getMMSSApproxMaximumMatching(
 
             // TODO: REMOVE REPORT
             report.open("report.txt", std::ios_base::app);
-            report << matching.matched_edges.size() << std::endl;
+            report << matching.matched_edges.size() << "," << overtake_count << "," << contract_count << "," << augment_count << "," << backtrack_count << ",";
+
+            for (AugmentingPath path : disjoint_augmenting_paths) {
+                std::set<Edge> unique;
+                for (Edge edge : path.first) {
+                    unique.insert(edge);
+                }
+                for (Edge edge : path.second) {
+                    unique.insert(edge);
+                }
+                report << unique.size() << " ";
+            }
+            report << std::endl;
+
             report.close();
+            // REPORT END
         }
     }
 

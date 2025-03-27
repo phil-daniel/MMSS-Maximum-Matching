@@ -32,12 +32,12 @@ void FreeNodeStructure::contract(
     // Connecting these two nodes if they are blossoms as we are adding an edge between them.
     if (node_of_u->isBlossom) {
         GraphBlossom* blossom_u = dynamic_cast<GraphBlossom*>(node_of_u);
-        blossom_u->outsideBlossomToIn[node_of_v] = unmatched_arc.first;
+        blossom_u->outside_blossom_to_in[node_of_v] = unmatched_arc.first;
     }
 
     if (node_of_v->isBlossom) {
         GraphBlossom* blossom_v = dynamic_cast<GraphBlossom*>(node_of_v);
-        blossom_v->outsideBlossomToIn[node_of_u] = unmatched_arc.second;
+        blossom_v->outside_blossom_to_in[node_of_u] = unmatched_arc.second;
     }
 
     // Finding the Lowest Common Ancestor of u and v.
@@ -61,26 +61,26 @@ void FreeNodeStructure::contract(
     new_blossom->addGraphNodeToBlossom(lca);
     if (lca->isBlossom) {
         GraphBlossom* blossom_node = dynamic_cast<GraphBlossom*>(lca);
-        for (Vertex vertex : blossom_node->verticesInBlossom) {
+        for (Vertex vertex : blossom_node->vertices_in_blossom) {
             addVertexToStruct(vertex, new_blossom);
         }
 
-        // for (pair<Vertex, GraphNode*> key_value : blossom_node->nodeOfVertexInBlossom) {
-        //     new_blossom->nodeOfVertexInBlossom[key_value.first] = blossom_node;
+        // for (pair<Vertex, GraphNode*> key_value : blossom_node->vertex_to_node_in_blossom) {
+        //     new_blossom->vertex_to_node_in_blossom[key_value.first] = blossom_node;
         // }
     } else {
         addVertexToStruct(lca->vertex_id, new_blossom);
-        // new_blossom->nodeOfVertexInBlossom[lca->vertex_id] = lca;
+        // new_blossom->vertex_to_node_in_blossom[lca->vertex_id] = lca;
     }
 
     current_pos = node_of_v;
     while (current_pos != lca && current_pos != nullptr && current_pos != new_blossom) {
         new_blossom->addGraphNodeToBlossom(current_pos);
-        new_blossom->nodesInOrder.emplace_back(current_pos);
+        new_blossom->nodes_in_order.emplace_back(current_pos);
 
         if (current_pos->isBlossom) {
             GraphBlossom* blossom_node = dynamic_cast<GraphBlossom*>(current_pos);
-            for (Vertex vertex : blossom_node->verticesInBlossom) {
+            for (Vertex vertex : blossom_node->vertices_in_blossom) {
                 addVertexToStruct(vertex, new_blossom);
             }
         } else {
@@ -95,7 +95,7 @@ void FreeNodeStructure::contract(
     }
     current_pos = node_of_u;
 
-    new_blossom->nodesInOrder.emplace_back(lca);
+    new_blossom->nodes_in_order.emplace_back(lca);
 
     // Reversing the list, this is so we can get the cycle stored
     stack<GraphNode*> lca_to_u_path;
@@ -109,11 +109,11 @@ void FreeNodeStructure::contract(
         GraphNode* node = lca_to_u_path.top();
 
         new_blossom->addGraphNodeToBlossom(node);
-        new_blossom->nodesInOrder.emplace_back(node);
+        new_blossom->nodes_in_order.emplace_back(node);
 
         if (node->isBlossom) {
             GraphBlossom* blossom_node = dynamic_cast<GraphBlossom*>(node);
-            for (Vertex vertex : blossom_node->verticesInBlossom) {
+            for (Vertex vertex : blossom_node->vertices_in_blossom) {
                 addVertexToStruct(vertex, new_blossom);
             }
         } else {
@@ -140,11 +140,11 @@ void FreeNodeStructure::contract(
     new_blossom->vertex_id = lca->vertex_id;
 
     // Updating vertex_to_graph_node to link all the vertices in the blossom to the new GraphBlossom structure.
-    for (Vertex vertex_id : new_blossom->verticesInBlossom) {
+    for (Vertex vertex_id : new_blossom->vertices_in_blossom) {
         vertex_to_graph_node[vertex_id] = new_blossom;
     }
 
-    if (new_blossom->nodesInBlossom.find(working_node) != new_blossom->nodesInBlossom.end()) {
+    if (new_blossom->nodes_in_blossom.find(working_node) != new_blossom->nodes_in_blossom.end()) {
         working_node = new_blossom;
     }
 
