@@ -677,7 +677,9 @@ vector<AugmentingPath> algPhase(
     overtake_count = 0;
     contract_count = 0;
 
-    for (int pass_bundle = 0; pass_bundle < pass_bundles_max; pass_bundle++) {
+    int pass_bundle = 1;
+
+    for (pass_bundle = 1; pass_bundle <= pass_bundles_max; pass_bundle++) {
         // Used to count the number of operations completed in a pass bundle, part of the Phase Skip optimisation
         int operations_completed = 0;
 
@@ -698,7 +700,7 @@ vector<AugmentingPath> algPhase(
         backtrackStuckStructures(&available_free_nodes, config, &operations_completed);
 
         // TODO: REMOVE REPORT
-        pass_count += 1;
+        pass_count += 3;
 
         // Phase Skip optimisation - If we have not completed any overtake, contract, augment or backtrack operations,
         // skip the remaining pass bundles of the current phase.
@@ -712,7 +714,7 @@ vector<AugmentingPath> algPhase(
     // TODO: REMOVE REPORT
     ofstream report;
     report.open("report.txt", std::ios_base::app);
-    report << pass_count << "/" << pass_bundles_max << ",";
+    report << pass_bundle << "/" << pass_bundles_max << ",";
     report.close();
 
     return disjoint_augmenting_paths;
