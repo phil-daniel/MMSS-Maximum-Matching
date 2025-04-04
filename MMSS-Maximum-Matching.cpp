@@ -22,33 +22,6 @@ int augment_count = 0;
 int contract_count = 0;
 int backtrack_count = 0;
 
-vector<Edge> getLeafToRootPath(
-    GraphNode* leaf
-) {
-    vector<Edge> path = {};
-    GraphNode* current = leaf;
-    GraphNode* parent = leaf->parent;
-
-    while (parent != nullptr) {
-        int current_value, parent_value;
-
-        current_value = current->vertex_id;
-
-        if (! parent->isBlossom) {
-            parent_value = parent->vertex_id;
-        } else {
-            parent_value = current->parent_index;
-        }
-
-        path.emplace_back(current_value, parent_value);
-
-        current = parent;
-        parent = parent->parent;
-    }
-
-    return path;
-}
-
 void updateChildLabels(
     GraphNode* parent_matched_vertex,
     int new_label,

@@ -4,7 +4,7 @@ project(MaximumMatchings)
 set(CMAKE_CXX_STANDARD 14)
 
 add_executable(MaximumMatchings
-        maxMatching.cpp
+        MMSS-Maximum-Matching.cpp
         Stream/Stream.h
         Stream/StreamFromMemory.h
         Stream/StreamFromMemory.cpp
