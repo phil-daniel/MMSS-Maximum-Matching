@@ -690,9 +690,20 @@ pair<bool, vector<AugmentingPath>> algPhase(
     report << pass_bundle << "/" << pass_bundles_max << ",";
     report.close();
 
-    bool early_finish_check = true;
+    bool end_check = true;
+    // Algorithm Skip Optimisation
+    bool node_on_hold_exists = false;
+    for (FreeNodeStructure* free_node_struct : available_free_nodes.free_node_structures) {
+        node_on_hold_exists = node_on_hold_exists || (! free_node_struct->on_hold);
+    }
+    if (config.optimisations && ! node_on_hold_exists) {
+        std::cout << "ALGORITHM SKIP: DFS has completed with no nodes marked as on hold, finishing the algorithm early" << std::endl;
+        end_check = false;
+    }
+
+
     // Early Finish optimisation -
-    if (config.early_finish) {
+    if (config.early_finish && end_check) {
         int minimum_matching_size_required = ceil(
             (matching->matched_edges.size() + floor(available_free_nodes.free_node_structures.size() / 2)) / (1 + epsilon)
         );
@@ -701,7 +712,7 @@ pair<bool, vector<AugmentingPath>> algPhase(
             std::cout << "\tMinimum Matching size required: " << minimum_matching_size_required << std::endl;
             std::cout << "\tCurrent Matching size: " << matching->matched_edges.size() + disjoint_augmenting_paths.size() << std::endl;
             // Returns false so we finish early
-            early_finish_check = false;
+            end_check = false;
 
             // TODO: REMOVE REPORT
             std::cout << "Matching size: " << matching->matched_edges.size() << "free nodes: " << available_free_nodes.free_node_structures.size() << std::endl;
@@ -709,7 +720,7 @@ pair<bool, vector<AugmentingPath>> algPhase(
     }
 
     // Returns true so we continue with the next phases
-    return make_pair(early_finish_check, disjoint_augmenting_paths);
+    return make_pair(end_check, disjoint_augmenting_paths);
 }
 
 Matching get2ApproximateMatching(
@@ -877,7 +888,7 @@ int main() {
     //Stream* stream = new StreamFromFile("example.txt");
     Stream* stream = new StreamFromMemory("test_graph.txt");
 
-    Matching matching = getMMSSApproxMaximumMatching(stream, 0.75, 3, 1, 1);
+    Matching matching = getMMSSApproxMaximumMatching(stream, 0.75, 3);
     std::cout << matching << std::endl;
     std::cout << "Total number of passes: " << stream->number_of_passes << std::endl;
 
