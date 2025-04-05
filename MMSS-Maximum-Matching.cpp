@@ -677,7 +677,7 @@ vector<AugmentingPath> algPhase(
 
         // Phase Skip optimisation - If we have not completed any overtake, contract, augment or backtrack operations,
         // skip the remaining pass bundles of the current phase.
-        if (config.optimisation_level >= PHASE_SKIP && operations_completed == 0) {
+        if (config.optimisations && operations_completed == 0) {
             if (config.progress_report >= PASS_BUNDLE) std::cout << "PHASE SKIP: No operations completed in the current pass bundle, skipping the remainder of the phase." << std::endl;
             break;
         }
@@ -720,7 +720,8 @@ Matching getMMSSApproxMaximumMatching(
     Stream* stream,
     float epsilon,
     int progress_report = 3,
-    int optimisation_level = 3
+    bool optimisations = true,
+    bool early_finish = false
 ) {
 
     // Setting up the config structure.
@@ -728,10 +729,8 @@ Matching getMMSSApproxMaximumMatching(
     if (progress_report < NO_OUTPUT) config.progress_report = NO_OUTPUT;
     else if (progress_report > VERBOSE) config.progress_report = VERBOSE;
     else config.progress_report = static_cast<ProgressReport>(progress_report);
-
-    if (optimisation_level < NO_OUTPUT) config.optimisation_level = NO_OPTIMISATION;
-    else if (optimisation_level > PHASE_SKIP) config.optimisation_level = PHASE_SKIP;
-    else config.optimisation_level = static_cast<OptimisationLevel>(optimisation_level);
+    config.optimisations = optimisations;
+    config.early_finish = early_finish;
 
     // Greedy matching, giving a 2 approximation
     Matching matching = get2ApproximateMatching(stream);
@@ -789,7 +788,7 @@ Matching getMMSSApproxMaximumMatching(
             }
 
             // Scale Skip optimisation - if we find no disjoint augmenting paths after a phase, we skip the current scale.
-            if (config.optimisation_level >= SCALE_SKIP && disjoint_augmenting_paths.empty()) {
+            if (optimisations && disjoint_augmenting_paths.empty()) {
                 if (config.progress_report >= SCALE) std::cout << "SCALE SKIP: No augmenting paths found in phase, skipping the remainder of the scale." << std::endl;
                 // TODO: REMOVE REPORT
                 report.open("report.txt", std::ios_base::app);

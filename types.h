@@ -19,18 +19,11 @@ enum ProgressReport {
     VERBOSE = 4, // Outputs above in addition to all operations which take place.
 };
 
-// Enums used to set what optimisations are used throughout the algorithm's execution.
-enum OptimisationLevel {
-    NO_OPTIMISATION = 0, // No optimisations, as described in MMSS
-    ALG_SKIP = 1, // Enables the Algorithm Skip optimisation
-    SCALE_SKIP = 2, // Enables the Scale Skip optimisation
-    PHASE_SKIP = 3, // Enables the Phase Skip optimisation
-};
-
 // Structure of the configuration values, set the optimisations used and debug outputs.
 struct Config {
     ProgressReport progress_report;
-    OptimisationLevel optimisation_level;
+    bool optimisations; // Enables and disables the phase skip, scale skip and algorithm skip optimisation
+    bool early_finish; // Enables and disables the early finish optimisation
 };
 
 #endif //TYPES_H
