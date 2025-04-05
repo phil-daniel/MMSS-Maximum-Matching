@@ -625,7 +625,7 @@ void extendActivePath(
 }
 
 
-vector<AugmentingPath> algPhase(
+pair<bool, vector<AugmentingPath>> algPhase(
     Stream* stream,
     Matching* matching,
     float epsilon,
@@ -650,7 +650,7 @@ vector<AugmentingPath> algPhase(
     overtake_count = 0;
     contract_count = 0;
 
-    int pass_bundle = 1;
+    int pass_bundle;
 
     for (pass_bundle = 1; pass_bundle <= pass_bundles_max; pass_bundle++) {
         // Used to count the number of operations completed in a pass bundle, part of the Phase Skip optimisation
@@ -690,7 +690,26 @@ vector<AugmentingPath> algPhase(
     report << pass_bundle << "/" << pass_bundles_max << ",";
     report.close();
 
-    return disjoint_augmenting_paths;
+    bool early_finish_check = true;
+    // Early Finish optimisation -
+    if (config.early_finish) {
+        int minimum_matching_size_required = ceil(
+            (matching->matched_edges.size() + floor(available_free_nodes.free_node_structures.size() / 2)) / (1 + epsilon)
+        );
+        if (matching->matched_edges.size() + disjoint_augmenting_paths.size() >= minimum_matching_size_required) {
+            std::cout << "Early finish check passed:" << std::endl;
+            std::cout << "\tMinimum Matching size required: " << minimum_matching_size_required << std::endl;
+            std::cout << "\tCurrent Matching size: " << matching->matched_edges.size() + disjoint_augmenting_paths.size() << std::endl;
+            // Returns false so we finish early
+            early_finish_check = false;
+
+            // TODO: REMOVE REPORT
+            std::cout << "Matching size: " << matching->matched_edges.size() << "free nodes: " << available_free_nodes.free_node_structures.size() << std::endl;
+        }
+    }
+
+    // Returns true so we continue with the next phases
+    return make_pair(early_finish_check, disjoint_augmenting_paths);
 }
 
 Matching get2ApproximateMatching(
@@ -767,7 +786,9 @@ Matching getMMSSApproxMaximumMatching(
             report.close();
 
             // Running a single phase of the algorithm to find disjoint augmenting paths.
-            vector<AugmentingPath> disjoint_augmenting_paths = algPhase(stream, &matching, epsilon, scale, config);
+            // The algPhase function returns true if it is to continue
+            std::pair<bool, vector<AugmentingPath>> phase_response = algPhase(stream, &matching, epsilon, scale, config);
+            vector<AugmentingPath> disjoint_augmenting_paths = phase_response.second;
 
             // Outputting relevant information about the augmenting paths found if required
             if (config.progress_report >= VERBOSE && ! disjoint_augmenting_paths.empty()) {
@@ -816,6 +837,11 @@ Matching getMMSSApproxMaximumMatching(
             // Checking the matching is valid
             matching.verifyMatching();
 
+            // Ending if the phase that has been run has told us to finish early
+            if (! phase_response.first) {
+                return matching;
+            }
+
             // TODO: REMOVE REPORT
             report.open("report.txt", std::ios_base::app);
             report << matching.matched_edges.size() << "," << overtake_count << "," << contract_count << "," << augment_count << "," << backtrack_count << ",";
@@ -851,7 +877,7 @@ int main() {
     //Stream* stream = new StreamFromFile("example.txt");
     Stream* stream = new StreamFromMemory("test_graph.txt");
 
-    Matching matching = getMMSSApproxMaximumMatching(stream, 0.75, 3, 3);
+    Matching matching = getMMSSApproxMaximumMatching(stream, 0.75, 3, 1, 1);
     std::cout << matching << std::endl;
     std::cout << "Total number of passes: " << stream->number_of_passes << std::endl;
 
