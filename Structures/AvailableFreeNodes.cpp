@@ -7,9 +7,9 @@ void AvailableFreeNodes::addNodeToStruct(GraphNode *node, GraphNode* main_node, 
 
     if (node->isBlossom) {
         // If we have a blossom we recursively call addNodeToStruct for each node within the blossom.
-        GraphBlossom* blossom = dynamic_cast<GraphBlossom *>(node);
-        for (GraphNode* node : blossom->nodes_in_blossom) {
-            addNodeToStruct(node, main_node, structure);
+        GraphBlossom* blossom = dynamic_cast<GraphBlossom*>(node);
+        for (Vertex vertex: blossom->vertices_in_blossom) {
+            setFreeNodeStructFromVertex(vertex, structure);
         }
     } else {
         // Setting the vertex_to_struct[vertex_id] = structure, so we know which structure the vertex belongs to.

@@ -21,6 +21,7 @@ int overtake_count = 0;
 int augment_count = 0;
 int contract_count = 0;
 int backtrack_count = 0;
+int scale_count = 0;
 
 void updateChildLabels(
     GraphNode* parent_matched_vertex,
@@ -177,6 +178,7 @@ void augment(
     AvailableFreeNodes* available_free_nodes,
     Matching* matching
 ) {
+
     FreeNodeStructure* struct_of_u = available_free_nodes->getFreeNodeStructFromVertex(unmatched_arc.first);
     FreeNodeStructure* struct_of_v = available_free_nodes->getFreeNodeStructFromVertex(unmatched_arc.second);
 
@@ -675,6 +677,8 @@ pair<bool, vector<AugmentingPath>> algPhase(
         // TODO: REMOVE REPORT
         pass_count += 3;
 
+        // std::cout << "Overtakes: " << overtake_count << " Contracts: " << contract_count << " Backtracks: " << backtrack_count << " Augments: " << augment_count  << std::endl;
+
         // Phase Skip optimisation - If we have not completed any overtake, contract, augment or backtrack operations,
         // skip the remaining pass bundles of the current phase.
         if (config.optimisations && operations_completed == 0) {
@@ -694,13 +698,12 @@ pair<bool, vector<AugmentingPath>> algPhase(
     // Algorithm Skip Optimisation
     bool node_on_hold_exists = false;
     for (FreeNodeStructure* free_node_struct : available_free_nodes.free_node_structures) {
-        node_on_hold_exists = node_on_hold_exists || (! free_node_struct->on_hold);
+        node_on_hold_exists = node_on_hold_exists || free_node_struct->on_hold;
     }
     if (config.optimisations && ! node_on_hold_exists) {
         std::cout << "ALGORITHM SKIP: DFS has completed with no nodes marked as on hold, finishing the algorithm early" << std::endl;
         end_check = false;
     }
-
 
     // Early Finish optimisation -
     if (config.early_finish && end_check) {
@@ -770,7 +773,6 @@ Matching getMMSSApproxMaximumMatching(
     report.open("report.txt", std::ios_base::app);
     report << "Scale, Phase, Pass Bundle, Matching Size, Overtakes, Contracts, Augments, Backtracks, Path Lengths" << std::endl;
     report << "0, 0/0, 0/0, " << matching.matched_edges.size() << std::endl;
-    int scale_count = 0;
     report.close();
 
     // Outputting relevant information about the initial matching if required.
@@ -891,8 +893,8 @@ int main() {
     //Stream* stream = new StreamFromFile("example.txt");
     Stream* stream = new StreamFromMemory("test_graph.txt");
 
-    Matching matching = getMMSSApproxMaximumMatching(stream, 0.75, 3);
-    std::cout << matching << std::endl;
+    Matching matching = getMMSSApproxMaximumMatching(stream, 0.5, 3, true, false);
+    //std::cout << matching << std::endl;
     std::cout << "Total number of passes: " << stream->number_of_passes << std::endl;
 
     delete stream;
