@@ -777,8 +777,11 @@ Matching getMMSSApproxMaximumMatching(
     if (config.progress_report >= SCALE) std::cout << "2 approximation size: " << matching.matched_edges.size() << std::endl;
     if (config.progress_report >= PASS_BUNDLE) std::cout << matching << std::endl;
 
+    // Finding the limit, rounding up to get the exact value.
+    int scale_limit_count = ceil(log2f(64 / (epsilon * epsilon)));
+    float scale_limit = 1 / (pow(2, scale_limit_count));
+
     // Iterating through each scale up to the limit.
-    float scale_limit = (epsilon * epsilon) / 64;
     for (float scale = 0.5f; scale >= scale_limit; scale = scale * 0.5f) {
         if (config.progress_report >= SCALE) std::cout << "Scale change: " << scale << "/" << scale_limit << std::endl;
 

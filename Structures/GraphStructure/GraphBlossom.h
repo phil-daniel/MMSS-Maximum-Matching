@@ -10,7 +10,6 @@ class GraphBlossom : public GraphNode {
     // Variables
     public:
         set<GraphNode*> nodes_in_blossom;
-    // TODO: Change this into a map? -> vertices to nodes within the blossom?
         set<Vertex> vertices_in_blossom;
         vector<GraphNode*> nodes_in_order;
         // An unordered map which takes an input of a node of the parent of the blossom and outputs the node within the blossom
