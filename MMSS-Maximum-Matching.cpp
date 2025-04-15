@@ -142,7 +142,6 @@ AugmentingPath getAugmentationInTree(
         add_to_matching = ! add_to_matching;
         pos += 1;
     }
-
     return {to_match, to_unmatch};
 }
 
@@ -404,16 +403,14 @@ void overtake(
 
             if (current_parent_of_v->isBlossom) {
                 GraphBlossom* parent_blossom = dynamic_cast<GraphBlossom *>(current_parent_of_v);
-                parent_blossom->recursivelyRemoveOutsideBlossomToIn(vertex_v);
-                // parent_blossom->outside_blossom_to_in.erase(vertex_v);
+                parent_blossom->outside_blossom_to_in.erase(vertex_v);
             }
 
             if (vertex_v->isBlossom) {
                 GraphBlossom* blossom_v = dynamic_cast<GraphBlossom *>(vertex_v);
-                blossom_v->recursivelyRemoveOutsideBlossomToIn(current_parent_of_v);
                 blossom_v->recursivelyAddOutsideBlossomToIn(vertex_u, unmatched_arc.second);
                 //blossom_v->outside_blossom_to_in[vertex_u] = unmatched_arc.second;
-                // blossom_v->outside_blossom_to_in.erase(current_parent_of_v);
+                blossom_v->outside_blossom_to_in.erase(current_parent_of_v);
             }
 
             if (vertex_u->isBlossom) {
@@ -449,14 +446,12 @@ void overtake(
 
             if (parent_of_v_in_struct_v->isBlossom) {
                 GraphBlossom* parent_blossom = dynamic_cast<GraphBlossom *>(parent_of_v_in_struct_v);
-                // parent_blossom->outside_blossom_to_in.erase(vertex_v);
-                parent_blossom->recursivelyRemoveOutsideBlossomToIn(vertex_v);
+                parent_blossom->outside_blossom_to_in.erase(vertex_v);
             }
 
             if (vertex_v->isBlossom) {
                 GraphBlossom* blossom_v = dynamic_cast<GraphBlossom *>(vertex_v);
-                // blossom_v->outside_blossom_to_in.erase(parent_of_v_in_struct_v);
-                blossom_v->recursivelyRemoveOutsideBlossomToIn(parent_of_v_in_struct_v);
+                blossom_v->outside_blossom_to_in.erase(parent_of_v_in_struct_v);
                 blossom_v->recursivelyAddOutsideBlossomToIn(vertex_u, unmatched_arc.second);
             }
 
@@ -927,7 +922,7 @@ int main() {
     //Stream* stream = new StreamFromFile("example.txt");
     Stream* stream = new StreamFromMemory("test_graph.txt");
 
-    Matching matching = getMMSSApproxMaximumMatching(stream, 0.5, 3, true, false);
+    Matching matching = getMMSSApproxMaximumMatching(stream, 0.1, 3, true, false);
     //std::cout << matching << std::endl;
     std::cout << "Total number of passes: " << stream->number_of_passes << std::endl;
 

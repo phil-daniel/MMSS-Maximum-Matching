@@ -28,7 +28,6 @@ class GraphBlossom : public GraphNode {
         void addGraphNodeToBlossom(GraphNode* node);
         void deleteContents();
         void recursivelyAddOutsideBlossomToIn(GraphNode* node, Vertex vertex);
-        void recursivelyRemoveOutsideBlossomToIn(GraphNode* node);
         AugmentingPath getBlossomAugmentation(
             Vertex in_blossom,
             Vertex out_blossom,

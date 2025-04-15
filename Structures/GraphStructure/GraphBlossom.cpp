@@ -20,21 +20,6 @@ void GraphBlossom::recursivelyAddOutsideBlossomToIn(GraphNode* node, Vertex vert
     }
 }
 
-void GraphBlossom::recursivelyRemoveOutsideBlossomToIn(GraphNode* node) {
-
-    Vertex vertex = getVertexInsideConnectedByEdge(node);
-
-    if (vertex != -1) {
-        GraphNode* node_of_vertex = vertex_to_node_in_blossom[vertex];
-        if (node_of_vertex->isBlossom) {
-            GraphBlossom* blossom = dynamic_cast<GraphBlossom*>(node_of_vertex);
-            blossom->recursivelyRemoveOutsideBlossomToIn(node);
-        }
-    }
-
-    outside_blossom_to_in.erase(node);
-}
-
 Vertex GraphBlossom::getVertexInsideConnectedByEdge(GraphNode* node) {
     if (outside_blossom_to_in.find(node) == outside_blossom_to_in.end()) {
         return -1;
@@ -47,8 +32,7 @@ void GraphBlossom::addGraphNodeToBlossom(GraphNode* node) {
     nodes_in_blossom.insert(node);
 
     // Since this node is now inside the blossom, it shouldn't be referenced in outside_blossom_to_in
-    // outside_blossom_to_in.erase(node);
-    recursivelyRemoveOutsideBlossomToIn(node);
+    outside_blossom_to_in.erase(node);
 
     // In case it has previously been added as a child.
     children.erase(node);
@@ -109,7 +93,6 @@ AugmentingPath GraphBlossom::getBlossomAugmentation(
     bool add_to_matching,
     Matching* matching
 ) {
-
     if (in_vertex == out_vertex) {
         return {{}, {}};
     }
@@ -214,7 +197,6 @@ AugmentingPath GraphBlossom::getBlossomAugmentation(
         current_pos = (current_pos + direction + nodes_in_order.size()) % nodes_in_order.size();
         add_to_matching = ! add_to_matching;
     }
-
     return {to_match, to_unmatch};
 }
 
