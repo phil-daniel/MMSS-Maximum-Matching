@@ -741,7 +741,7 @@ pair<bool, vector<AugmentingPath>> algPhase(
             std::cout << "Early finish check passed:" << std::endl;
             std::cout << "\tMinimum Matching size required: " << minimum_matching_size_required << std::endl;
             std::cout << "\tCurrent Matching size: " << matching->matched_edges.size() + disjoint_augmenting_paths.size() << std::endl;
-            // Returns false so we finish early
+            // Set to false so we finish early and don't complete another phase
             end_check = false;
 
             // TODO: REMOVE REPORT
@@ -853,6 +853,16 @@ Matching getMMSSApproxMaximumMatching(
                 }
             }
 
+            // Augmenting the current matching with the augmenting paths found.
+            matching.augmentMatching(&disjoint_augmenting_paths);
+            // Checking the matching is valid
+            matching.verifyMatching();
+
+            // Ending if the phase that has been run has told us to finish early
+            if (! phase_response.first) {
+                return matching;
+            }
+
             // Scale Skip optimisation - if we find no disjoint augmenting paths after a phase, we skip the current scale.
             if (optimisations && disjoint_augmenting_paths.empty()) {
                 if (config.progress_report >= SCALE) std::cout << "SCALE SKIP: No augmenting paths found in phase, skipping the remainder of the scale." << std::endl;
@@ -875,16 +885,6 @@ Matching getMMSSApproxMaximumMatching(
                 report.close();
                 // REPORT END
                 break;
-            }
-
-            // Augmenting the current matching with the augmenting paths found.
-            matching.augmentMatching(&disjoint_augmenting_paths);
-            // Checking the matching is valid
-            matching.verifyMatching();
-
-            // Ending if the phase that has been run has told us to finish early
-            if (! phase_response.first) {
-                return matching;
             }
 
             // TODO: REMOVE REPORT
