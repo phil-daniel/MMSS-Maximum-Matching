@@ -14,10 +14,25 @@ void GraphBlossom::recursivelyAddOutsideBlossomToIn(GraphNode* node, Vertex vert
     GraphNode* node_of_vertex = vertex_to_node_in_blossom[vertex];
     if (node_of_vertex->isBlossom) {
         GraphBlossom* blossom = dynamic_cast<GraphBlossom*>(node_of_vertex);
-        if (blossom->getVertexInsideConnectedByEdge(node) == -1) {
+        if (blossom->getVertexInsideConnectedByEdge(node) != vertex) {
             blossom->recursivelyAddOutsideBlossomToIn(node, vertex);
         }
     }
+}
+
+void GraphBlossom::recursivelyRemoveOutsideBlossomToIn(GraphNode* node) {
+
+    Vertex vertex = getVertexInsideConnectedByEdge(node);
+
+    if (vertex != -1) {
+        GraphNode* node_of_vertex = vertex_to_node_in_blossom[vertex];
+        if (node_of_vertex->isBlossom) {
+            GraphBlossom* blossom = dynamic_cast<GraphBlossom*>(node_of_vertex);
+            blossom->recursivelyRemoveOutsideBlossomToIn(node);
+        }
+    }
+
+    outside_blossom_to_in.erase(node);
 }
 
 Vertex GraphBlossom::getVertexInsideConnectedByEdge(GraphNode* node) {
@@ -31,10 +46,9 @@ void GraphBlossom::addGraphNodeToBlossom(GraphNode* node) {
     // Adding the node to nodes_in_blossom, a set holding all the nodes in the blossom.
     nodes_in_blossom.insert(node);
 
-    // TODO: This cleans up the bit at the bottom, would prefer to remove this somehow though
-    outside_blossom_to_in.erase(node);
-
-    // TODO: need to handle adding new vertices connecting to edges
+    // Since this node is now inside the blossom, it shouldn't be referenced in outside_blossom_to_in
+    // outside_blossom_to_in.erase(node);
+    recursivelyRemoveOutsideBlossomToIn(node);
 
     // In case it has previously been added as a child.
     children.erase(node);
@@ -72,13 +86,19 @@ void GraphBlossom::addGraphNodeToBlossom(GraphNode* node) {
     // We also need to add that there is an edge from the parent node to this node in the blossom
 
     // Not sure this is needed. Only occurs if LCA?
-    if (node->parent != nullptr && node->parent != this) {
+    if (node->parent != nullptr && node->parent != this &&
+        this->nodes_in_blossom.find(node->parent) == this->nodes_in_blossom.end()
+    ) {
         outside_blossom_to_in[node->parent] = node->vertex_id;
     }
 }
 
 void GraphBlossom::deleteContents() {
     for (GraphNode* node : nodes_in_blossom) {
+        if (node->isBlossom) {
+            GraphBlossom* blossom = dynamic_cast<GraphBlossom*>(node);
+            blossom->deleteContents();
+        }
         delete node;
     }
 }

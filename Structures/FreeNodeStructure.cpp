@@ -59,23 +59,20 @@ void FreeNodeStructure::contract(
 
     GraphBlossom* new_blossom = new GraphBlossom();
     new_blossom->addGraphNodeToBlossom(lca);
+    lca->children = {};
     if (lca->isBlossom) {
         GraphBlossom* blossom_node = dynamic_cast<GraphBlossom*>(lca);
         for (Vertex vertex : blossom_node->vertices_in_blossom) {
             addVertexToStruct(vertex, new_blossom);
         }
-
-        // for (pair<Vertex, GraphNode*> key_value : blossom_node->vertex_to_node_in_blossom) {
-        //     new_blossom->vertex_to_node_in_blossom[key_value.first] = blossom_node;
-        // }
     } else {
         addVertexToStruct(lca->vertex_id, new_blossom);
-        // new_blossom->vertex_to_node_in_blossom[lca->vertex_id] = lca;
     }
 
     current_pos = node_of_v;
     while (current_pos != lca && current_pos != nullptr && current_pos != new_blossom) {
         new_blossom->addGraphNodeToBlossom(current_pos);
+        current_pos->children = {};
         new_blossom->nodes_in_order.emplace_back(current_pos);
 
         if (current_pos->isBlossom) {
@@ -109,6 +106,7 @@ void FreeNodeStructure::contract(
         GraphNode* node = lca_to_u_path.top();
 
         new_blossom->addGraphNodeToBlossom(node);
+        node->children = {};
         new_blossom->nodes_in_order.emplace_back(node);
 
         if (node->isBlossom) {
@@ -140,20 +138,14 @@ void FreeNodeStructure::contract(
     new_blossom->vertex_id = lca->vertex_id;
 
     // Updating vertex_to_graph_node to link all the vertices in the blossom to the new GraphBlossom structure.
-    for (Vertex vertex_id : new_blossom->vertices_in_blossom) {
-        vertex_to_graph_node[vertex_id] = new_blossom;
-    }
+    // for (Vertex vertex_id : new_blossom->vertices_in_blossom) {
+    //     vertex_to_graph_node[vertex_id] = new_blossom;
+    // }
 
     if (new_blossom->nodes_in_blossom.find(working_node) != new_blossom->nodes_in_blossom.end()) {
         working_node = new_blossom;
     }
 
-    // // Settings whether this node is an inner or outer node.
-    // if (new_blossom->parent == nullptr) {
-    //     new_blossom->isOuterVertex = true;
-    // } else {
-    //     new_blossom->isOuterVertex = ! new_blossom->parent->isOuterVertex;
-    // }
     // Blossoms can only occur at outer vertices.
     new_blossom->isOuterVertex = true;
 
@@ -185,9 +177,8 @@ void FreeNodeStructure::deleteStructure() {
     queue<GraphNode*> to_delete;
     to_delete.push(free_node_root);
 
-    while (to_delete.empty() == false) {
+    while (! to_delete.empty()) {
         GraphNode* item = to_delete.front();
-        to_delete.pop();
         for (GraphNode* child : item->children) {
             to_delete.push(child);
         }
@@ -197,6 +188,7 @@ void FreeNodeStructure::deleteStructure() {
             GraphBlossom* blossom = dynamic_cast<GraphBlossom*>(item);
             blossom->deleteContents();
         }
+        to_delete.pop();
 
         delete item;
     }

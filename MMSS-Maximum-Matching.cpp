@@ -22,14 +22,16 @@ int augment_count = 0;
 int contract_count = 0;
 int backtrack_count = 0;
 int scale_count = 0;
+int pass_bundle_count = 0;
 
 void updateChildLabels(
     GraphNode* parent_matched_vertex,
     int new_label,
     Matching* matching
 ) {
+    // Conducts a breadth-first search to update all the matched edge labels below parent_matched_vertex
     vector<GraphNode*> current_level = {parent_matched_vertex};
-    while (!current_level.empty()) {
+    while (! current_level.empty()) {
         // Need to go two levels down each time, otherwise we will be labelling unmatched edges
         vector<GraphNode*> new_level = {};
         for (GraphNode* node : current_level) {
@@ -38,13 +40,13 @@ void updateChildLabels(
                 Edge matched_edge = make_pair(child->parent_index, child->vertex_id);
 
                 matching->setLabel(matched_edge, new_label);
-                new_label++;
 
                 for (GraphNode* grandchild : child->children) {
                     new_level.emplace_back(grandchild);
                 }
             }
         }
+        new_label++;
         current_level = new_level;
     }
 }
@@ -182,8 +184,8 @@ void augment(
     FreeNodeStructure* struct_of_u = available_free_nodes->getFreeNodeStructFromVertex(unmatched_arc.first);
     FreeNodeStructure* struct_of_v = available_free_nodes->getFreeNodeStructFromVertex(unmatched_arc.second);
 
-    GraphNode *graph_node_of_u = struct_of_u->getGraphNodeFromVertex(unmatched_arc.first);
-    GraphNode *graph_node_of_v = struct_of_v->getGraphNodeFromVertex(unmatched_arc.second);
+    GraphNode* graph_node_of_u = struct_of_u->getGraphNodeFromVertex(unmatched_arc.first);
+    GraphNode* graph_node_of_v = struct_of_v->getGraphNodeFromVertex(unmatched_arc.second);
     AugmentingPath new_augmentation = getAugmentation(graph_node_of_u, graph_node_of_v, unmatched_arc.first, unmatched_arc.second, matching);
 
     struct_of_u->used = true;
@@ -216,8 +218,7 @@ void contractAndAugment(
 
         // If the two vertices are in the same non-used structure.
         if (
-            struct_of_u != nullptr && struct_of_u == struct_of_v &&
-            ! struct_of_u->used && ! struct_of_v->used
+            struct_of_u != nullptr && struct_of_u == struct_of_v && (! struct_of_u->used)
         ) {
             GraphNode* node_of_u = struct_of_u->getGraphNodeFromVertex(edge.first);
             GraphNode* node_of_v = struct_of_u->getGraphNodeFromVertex(edge.second);
@@ -238,6 +239,9 @@ void contractAndAugment(
     }
 
     for (pair<FreeNodeStructure*, vector<Edge>> pair : edges_in_structures) {
+        if (edge.first == -1 || edge.second == -1) {
+            continue;
+        }
         int contractions_in_last_iteration = -1;
         while (contractions_in_last_iteration != 0) {
             contractions_in_last_iteration = 0;
@@ -252,7 +256,7 @@ void contractAndAugment(
                     int blossom_parent_id = new_blossom->parent_index;
                     int parent_label = matching->getLabel(matching->getMatchedEdgeFromVertex(blossom_parent_id));
                     for (GraphNode* child : new_blossom->children) {
-                        updateChildLabels(child, parent_label+1, matching);
+                        updateChildLabels(child, parent_label, matching);
                     }
                     contractions_in_last_iteration += 1;
 
@@ -340,15 +344,15 @@ void overtake(
     FreeNodeStructure* struct_of_t = available_free_nodes->getFreeNodeStructFromVertex(matched_arc.second);
 
     Edge matched_arc_using_u = matching->getMatchedEdgeFromVertex(unmatched_arc.first);
-    int current_label = 0;
-    if (matched_arc_using_u.first != -1) {
-        // If the edge doesn't exist them getMatchedEdgeFromVertex will return (-1,-1)
-        current_label = matching->getLabel(matched_arc_using_u);
-    }
+    int current_label = matching->getLabel(matched_arc_using_u);
+    // int current_label = 0;
+    // if (matched_arc_using_u.first != -1) {
+    //     // If the edge doesn't exist them getMatchedEdgeFromVertex will return (-1,-1)
+    //     current_label = matching->getLabel(matched_arc_using_u);
+    // }
     if (unmatched_arc.second != matched_arc.first) {
         matched_arc = make_pair(matched_arc.second, matched_arc.first);
     }
-    // TODO: needs nullptr check and merge with below
 
     // Case 1: Our matched_arc is not currently in a structure
     if (struct_of_v == nullptr && struct_of_t == nullptr) {
@@ -372,7 +376,7 @@ void overtake(
         vertex_v->isOuterVertex = false;
         vertex_t->isOuterVertex = true;
 
-        available_free_nodes->addNodeToStruct(vertex_v, vertex_v, struct_of_u);
+        available_free_nodes->addNodeToStruct(vertex_v, struct_of_u);
 
         matching->setLabel(matched_arc, current_label+1);
 
@@ -389,7 +393,6 @@ void overtake(
         // Case 2.1: If the matched arc is in the same structure as the vertex u, with the matched arc joining them.
         // I.e. overtaking within a single structure.
         if (struct_of_u == struct_of_t) {
-            // TODO: Need nullptr checks?
             // Here we know struct_of_u == struct_of_v == struct_of_v
             GraphNode* vertex_u = struct_of_t->getGraphNodeFromVertex(unmatched_arc.first);
             GraphNode* vertex_v = struct_of_t->getGraphNodeFromVertex(matched_arc.first);
@@ -399,17 +402,18 @@ void overtake(
             // Removing vertex v from the set of it's parent's children.
             current_parent_of_v->children.erase(vertex_v);
 
-            // TODO: Check these are correct
             if (current_parent_of_v->isBlossom) {
                 GraphBlossom* parent_blossom = dynamic_cast<GraphBlossom *>(current_parent_of_v);
-                parent_blossom->outside_blossom_to_in.erase(vertex_v);
+                parent_blossom->recursivelyRemoveOutsideBlossomToIn(vertex_v);
+                // parent_blossom->outside_blossom_to_in.erase(vertex_v);
             }
 
             if (vertex_v->isBlossom) {
                 GraphBlossom* blossom_v = dynamic_cast<GraphBlossom *>(vertex_v);
+                blossom_v->recursivelyRemoveOutsideBlossomToIn(current_parent_of_v);
                 blossom_v->recursivelyAddOutsideBlossomToIn(vertex_u, unmatched_arc.second);
                 //blossom_v->outside_blossom_to_in[vertex_u] = unmatched_arc.second;
-                blossom_v->outside_blossom_to_in.erase(current_parent_of_v);
+                // blossom_v->outside_blossom_to_in.erase(current_parent_of_v);
             }
 
             if (vertex_u->isBlossom) {
@@ -427,7 +431,6 @@ void overtake(
             struct_of_t->working_node = vertex_t;
 
             struct_of_t->modified = true;
-
             updateChildLabels(vertex_v, current_label+1, matching);
 
             if (config.progress_report >= VERBOSE) {
@@ -446,13 +449,15 @@ void overtake(
 
             if (parent_of_v_in_struct_v->isBlossom) {
                 GraphBlossom* parent_blossom = dynamic_cast<GraphBlossom *>(parent_of_v_in_struct_v);
-                parent_blossom->outside_blossom_to_in.erase(vertex_v);
+                // parent_blossom->outside_blossom_to_in.erase(vertex_v);
+                parent_blossom->recursivelyRemoveOutsideBlossomToIn(vertex_v);
             }
 
             if (vertex_v->isBlossom) {
                 GraphBlossom* blossom_v = dynamic_cast<GraphBlossom *>(vertex_v);
+                // blossom_v->outside_blossom_to_in.erase(parent_of_v_in_struct_v);
+                blossom_v->recursivelyRemoveOutsideBlossomToIn(parent_of_v_in_struct_v);
                 blossom_v->recursivelyAddOutsideBlossomToIn(vertex_u, unmatched_arc.second);
-                blossom_v->outside_blossom_to_in.erase(parent_of_v_in_struct_v);
             }
 
             if (vertex_u->isBlossom) {
@@ -467,7 +472,7 @@ void overtake(
             vertex_u->children.insert(vertex_v);
 
             available_free_nodes->removeNodeFromStruct(vertex_v, struct_of_v);
-            available_free_nodes->addNodeToStruct(vertex_v, vertex_v, struct_of_u);
+            available_free_nodes->addNodeToStruct(vertex_v, struct_of_u);
 
             GraphNode* old_working_node = struct_of_v->working_node;
             if (old_working_node != nullptr && struct_of_v->getGraphNodeFromVertex(old_working_node->vertex_id) == nullptr) {
@@ -571,6 +576,13 @@ void extendActivePath(
                     // Contracting the blossom created by the adding the edge to the structure.
                     struct_of_u->contract(edge);
 
+                    GraphNode* new_blossom = struct_of_u->getGraphNodeFromVertex(edge.first);
+                    int blossom_parent_id = new_blossom->parent_index;
+                    int parent_label = matching->getLabel(matching->getMatchedEdgeFromVertex(blossom_parent_id));
+                    for (GraphNode* child : new_blossom->children) {
+                        updateChildLabels(child, parent_label, matching);
+                    }
+
                     *operations_completed += 1;
                     if (config.progress_report >= VERBOSE) {
                         std::cout << "Contract: Struct " << struct_of_u->free_node_root->vertex_id;
@@ -591,13 +603,32 @@ void extendActivePath(
                 if (config.progress_report >= VERBOSE) {
                     std::cout << "Augment: Struct " << struct_of_u->free_node_root->vertex_id;
                     std::cout << " and Struct "<< struct_of_v->free_node_root->vertex_id;
-                    std::cout << " on edge" << edge.first << "->" << edge.second << std::endl;
+                    std::cout << " on edge " << edge.first << "->" << edge.second << std::endl;
                 }
             }
         }
 
         // Case 5: Otherwise we attempt to overtake and add the matched edge to the structure.
         else {
+
+            // Ensuring v is not an ancestor of u in any structure, this is a requirement of overtake.
+            if (struct_of_u == struct_of_v) {
+                GraphNode* current = struct_of_u->getGraphNodeFromVertex(edge.first);
+                GraphNode* v_node = struct_of_u->getGraphNodeFromVertex(edge.second);
+                bool v_is_ancestor_of_u = false;
+                while (current != nullptr) {
+                    if (current == v_node) {
+                        v_is_ancestor_of_u = true;
+                        break;
+                    }
+                    current = current->parent;
+                }
+                if (v_is_ancestor_of_u) {
+                    edge = stream->readStream();
+                    continue;
+                }
+            }
+
             int distance_to_u = 0;
             // Getting the matched edge whose has a vertex of u.
             Edge matching_using_u = matching->getMatchedEdgeFromVertex(edge.first);
@@ -613,7 +644,6 @@ void extendActivePath(
             // If the matched edge using v exists we can overtake from edge {u,v}
             if (matching_using_v.first != -1 && distance_to_u + 1 < distance_to_v) {
                 overtake(edge, matching_using_v, available_free_nodes, matching, config);
-
                 *operations_completed += 1;
 
                 // TODO: REPORT REMOVE:
@@ -651,6 +681,7 @@ pair<bool, vector<AugmentingPath>> algPhase(
     backtrack_count = 0;
     overtake_count = 0;
     contract_count = 0;
+    pass_bundle_count = 1;
 
     int pass_bundle;
 
@@ -660,7 +691,7 @@ pair<bool, vector<AugmentingPath>> algPhase(
 
         if (config.progress_report >= PASS_BUNDLE) std::cout << "Pass bundle: " << pass_bundle << "/" << pass_bundles_max << std::endl;
 
-        // Resetting any free node strucures whenever required.
+        // Resetting any free node structures whenever required.
         for (FreeNodeStructure* free_node_struct : available_free_nodes.free_node_structures) {
             if (free_node_struct->vertex_to_graph_node.size() >= path_limit) free_node_struct->on_hold = true;
             else free_node_struct->on_hold = false;
@@ -676,6 +707,7 @@ pair<bool, vector<AugmentingPath>> algPhase(
 
         // TODO: REMOVE REPORT
         pass_count += 3;
+        pass_bundle_count += 1;
 
         // std::cout << "Overtakes: " << overtake_count << " Contracts: " << contract_count << " Backtracks: " << backtrack_count << " Augments: " << augment_count  << std::endl;
 
@@ -721,6 +753,8 @@ pair<bool, vector<AugmentingPath>> algPhase(
             std::cout << "Matching size: " << matching->matched_edges.size() << "free nodes: " << available_free_nodes.free_node_structures.size() << std::endl;
         }
     }
+
+    available_free_nodes.deleteStructures();
 
     // Returns true so we continue with the next phases
     return make_pair(end_check, disjoint_augmenting_paths);

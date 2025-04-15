@@ -66,7 +66,7 @@ Edge Matching::getMatchedEdgeFromVertex(Vertex vertex) {
 int Matching::getLabel(Edge edge) {
     Edge std_edge = getStandardEdge(edge);
     if (matched_edge_to_label.find(std_edge) == matched_edge_to_label.end()) {
-        return -1;
+        return 0;
     }
     return matched_edge_to_label[std_edge];
 }
