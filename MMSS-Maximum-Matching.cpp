@@ -727,7 +727,7 @@ pair<bool, vector<AugmentingPath>> algPhase(
     for (FreeNodeStructure* free_node_struct : available_free_nodes.free_node_structures) {
         node_on_hold_exists = node_on_hold_exists || free_node_struct->on_hold;
     }
-    if (config.optimisations && ! node_on_hold_exists) {
+    if (config.optimisations && ! node_on_hold_exists && disjoint_augmenting_paths.size() == 0) {
         std::cout << "ALGORITHM SKIP: DFS has completed with no nodes marked as on hold, finishing the algorithm early" << std::endl;
         end_check = false;
     }
