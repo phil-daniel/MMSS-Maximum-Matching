@@ -16,14 +16,6 @@
 
 using namespace std;
 
-// TODO: REPORT REMOVE
-int overtake_count = 0;
-int augment_count = 0;
-int contract_count = 0;
-int backtrack_count = 0;
-int scale_count = 0;
-int pass_bundle_count = 0;
-
 void updateChildLabels(
     GraphNode* parent_matched_vertex,
     int new_label,
@@ -191,9 +183,6 @@ void augment(
     struct_of_v->used = true;
 
     disjoint_augmenting_paths->emplace_back(new_augmentation);
-
-    // TODO: REPORT REMOVE
-    augment_count += 1;
 }
 
 void contractAndAugment(
@@ -264,9 +253,6 @@ void contractAndAugment(
                         std::cout << "ContractAndAugment - Contract: Struct " << pair.first->free_node_root->vertex_id;
                         std::cout << " on edge " << edge_in_struct.first << "->" << edge_in_struct.second << std::endl;
                     }
-
-                    // TODO: REPORT REMOVE
-                    contract_count += 1;
                 }
             }
         }
@@ -323,9 +309,6 @@ void backtrackStuckStructures(
             std::cout << "Backtracking: Struct " << structure->free_node_root->vertex_id << std::endl;
             if (structure->working_node == nullptr) std::cout << "Struct " << structure->free_node_root->vertex_id << " now inactive." << std::endl;
         }
-
-        // TODO: REPORT REMOVE
-        backtrack_count += 1;
     }
 }
 
@@ -336,7 +319,6 @@ void overtake(
     Matching* matching,
     Config config
 ) {
-    // TODO: Add input check?
 
     FreeNodeStructure* struct_of_u = available_free_nodes->getFreeNodeStructFromVertex(unmatched_arc.first);
     FreeNodeStructure* struct_of_v = available_free_nodes->getFreeNodeStructFromVertex(unmatched_arc.second);
@@ -371,7 +353,7 @@ void overtake(
         struct_of_u->working_node->children.insert(vertex_v);
         struct_of_u->working_node = vertex_t;
 
-        // TODO: Just set these as we know they have to be.
+        // By the algorithm we know that v will be an outer vertex and t will be an inner vertex.
         vertex_v->isOuterVertex = false;
         vertex_t->isOuterVertex = true;
 
@@ -584,9 +566,6 @@ void extendActivePath(
                         std::cout << " on edge" << edge.first << "->" << edge.second << std::endl;
                     }
 
-                    // TODO: REPORT REMOVE
-                    contract_count += 1;
-
                 }
             } else {
                 // u and v belong to different structures
@@ -641,8 +620,6 @@ void extendActivePath(
                 overtake(edge, matching_using_v, available_free_nodes, matching, config);
                 *operations_completed += 1;
 
-                // TODO: REPORT REMOVE:
-                overtake_count += 1;
             }
         }
 
@@ -671,14 +648,6 @@ pair<bool, vector<AugmentingPath>> algPhase(
     // Setting the value of all the labels back to the maximum value.
     matching->resetLabels();
 
-    // TODO: REMOVE REPORT
-    int pass_count = 1;
-    augment_count = 0;
-    backtrack_count = 0;
-    overtake_count = 0;
-    contract_count = 0;
-    pass_bundle_count = 1;
-
     int pass_bundle;
 
     for (pass_bundle = 1; pass_bundle <= pass_bundles_max; pass_bundle++) {
@@ -701,10 +670,6 @@ pair<bool, vector<AugmentingPath>> algPhase(
         // Backtracks any structures which have not be used.
         backtrackStuckStructures(&available_free_nodes, config, &operations_completed);
 
-        // TODO: REMOVE REPORT
-        pass_count += 3;
-        pass_bundle_count += 1;
-
         // std::cout << "Overtakes: " << overtake_count << " Contracts: " << contract_count << " Backtracks: " << backtrack_count << " Augments: " << augment_count  << std::endl;
 
         // Phase Skip optimisation - If we have not completed any overtake, contract, augment or backtrack operations,
@@ -715,12 +680,6 @@ pair<bool, vector<AugmentingPath>> algPhase(
         }
 
     }
-
-    // TODO: REMOVE REPORT
-    ofstream report;
-    report.open("report.txt", std::ios_base::app);
-    report << pass_bundle << "/" << pass_bundles_max << ",";
-    report.close();
 
     // End check signifies whether we continue with the algorithm after completion of this phase. If true we carry on.
     bool end_check = true;
@@ -746,9 +705,6 @@ pair<bool, vector<AugmentingPath>> algPhase(
             std::cout << "\tCurrent Matching size: " << matching->matched_edges.size() + disjoint_augmenting_paths.size() << std::endl;
             // Set to false so we finish early and don't complete another phase
             end_check = false;
-
-            // TODO: REMOVE REPORT
-            std::cout << "Previous Matching size: " << matching->matched_edges.size() << ", Free Nodes: " << available_free_nodes.free_node_structures.size() << std::endl;
         }
     }
 
@@ -800,13 +756,6 @@ Matching getMMSSApproxMaximumMatching(
     // Greedy matching, giving a 2 approximation
     Matching matching = get2ApproximateMatching(stream);
 
-    // TODO: REMOVE REPORT
-    ofstream report;
-    report.open("report.txt", std::ios_base::app);
-    report << "Scale, Phase, Pass Bundle, Matching Size, Overtakes, Contracts, Augments, Backtracks, Path Lengths" << std::endl;
-    report << "0, 0/0, 0/0, " << matching.matched_edges.size() << std::endl;
-    report.close();
-
     // Outputting relevant information about the initial matching if required.
     if (config.progress_report >= SCALE) std::cout << "2 approximation size: " << matching.matched_edges.size() << std::endl;
     if (config.progress_report >= PASS_BUNDLE) std::cout << matching << std::endl;
@@ -819,19 +768,10 @@ Matching getMMSSApproxMaximumMatching(
     for (float scale = 0.5f; scale >= scale_limit; scale = scale * 0.5f) {
         if (config.progress_report >= SCALE) std::cout << "Scale change: " << scale << "/" << scale_limit << std::endl;
 
-        // TODO: REMOVE REPORT
-        scale_count += 1;
-
         // Iterating through each phase in the scale.
         float phase_limit = std::ceil(144.f / (scale * epsilon));
         for (float phase = 1; phase <= phase_limit; phase++) {
             if (config.progress_report >= PHASE) std::cout << "Scale: " << scale << "/" << scale_limit << " Phase: " << phase << "/" << phase_limit << std::endl;
-
-            // TODO: REMOVE REPORT
-            ofstream report;
-            report.open("report.txt", std::ios_base::app);
-            report << scale_count << ", " << phase << "/" << phase_limit << ", ";
-            report.close();
 
             // Running a single phase of the algorithm to find disjoint augmenting paths.
             // The algPhase function returns true if it is to continue
@@ -861,25 +801,6 @@ Matching getMMSSApproxMaximumMatching(
             // Checking the matching is valid
             matching.verifyMatching();
 
-            // TODO: REMOVE REPORT
-            report.open("report.txt", std::ios_base::app);
-            report << matching.matched_edges.size() << "," << overtake_count << "," << contract_count << "," << augment_count << "," << backtrack_count << ",";
-
-            for (AugmentingPath path : disjoint_augmenting_paths) {
-                std::set<Edge> unique;
-                for (Edge edge : path.first) {
-                    unique.insert(edge);
-                }
-                for (Edge edge : path.second) {
-                    unique.insert(edge);
-                }
-                report << unique.size() << " ";
-            }
-            report << std::endl;
-
-            report.close();
-            // REPORT END
-
             // Ending if the phase that has been run has told us to finish early
             if (! phase_response.first) {
                 return matching;
@@ -897,12 +818,6 @@ Matching getMMSSApproxMaximumMatching(
 }
 
 int main() {
-
-    // TODO: REMOVE REPORT
-    ofstream report;
-    report.open("report.txt");
-    report << std::endl;
-    report.close();
 
     //Stream* stream = new StreamFromFile("example.txt");
     Stream* stream = new StreamFromMemory("test_graph.txt");

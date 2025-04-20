@@ -27,8 +27,6 @@ void FreeNodeStructure::contract(
     GraphNode* node_of_u = getGraphNodeFromVertex(unmatched_arc.first);
     GraphNode* node_of_v = getGraphNodeFromVertex(unmatched_arc.second);
 
-    // TODO: Some kind of validation checking?
-
     // Connecting these two nodes if they are blossoms as we are adding an edge between them.
     if (node_of_u->isBlossom) {
         GraphBlossom* blossom_u = dynamic_cast<GraphBlossom*>(node_of_u);
@@ -162,7 +160,6 @@ void FreeNodeStructure::backtrack() {
 
     // Updating the working node to the previous outer vertex (i.e. parent of the parent of the current).
     GraphNode* new_working_node = working_node;
-    // TODO: Better handle inactive structures?
     if (new_working_node != nullptr && new_working_node->parent != nullptr) {
         new_working_node = new_working_node->parent->parent;
         working_node = new_working_node;

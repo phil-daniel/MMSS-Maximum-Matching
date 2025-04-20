@@ -61,15 +61,12 @@ void GraphBlossom::addGraphNodeToBlossom(GraphNode* node) {
             child_node->parent = this;
 
             // We also need to add that there is an edge from this child node to the parent node in the blossom
-            // TODO: Fix this by checking if node is a blossom and if so using th outside_blossom_to_in of the blossom
             outside_blossom_to_in[child_node] = child_node->parent_index;
         }
     }
 
-    // TODO: what if multiple nodes have same parent?
     // We also need to add that there is an edge from the parent node to this node in the blossom
 
-    // Not sure this is needed. Only occurs if LCA?
     if (node->parent != nullptr && node->parent != this &&
         this->nodes_in_blossom.find(node->parent) == this->nodes_in_blossom.end()
     ) {
