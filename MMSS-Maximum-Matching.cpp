@@ -668,6 +668,7 @@ pair<bool, vector<AugmentingPath>> algPhase(
 
     AvailableFreeNodes available_free_nodes = AvailableFreeNodes();
 
+    // Setting the value of all the labels back to the maximum value.
     matching->resetLabels();
 
     // TODO: REMOVE REPORT
@@ -721,7 +722,9 @@ pair<bool, vector<AugmentingPath>> algPhase(
     report << pass_bundle << "/" << pass_bundles_max << ",";
     report.close();
 
+    // End check signifies whether we continue with the algorithm after completion of this phase. If true we carry on.
     bool end_check = true;
+
     // Algorithm Skip Optimisation
     bool node_on_hold_exists = false;
     for (FreeNodeStructure* free_node_struct : available_free_nodes.free_node_structures) {
@@ -745,7 +748,7 @@ pair<bool, vector<AugmentingPath>> algPhase(
             end_check = false;
 
             // TODO: REMOVE REPORT
-            std::cout << "Matching size: " << matching->matched_edges.size() << "free nodes: " << available_free_nodes.free_node_structures.size() << std::endl;
+            std::cout << "Previous Matching size: " << matching->matched_edges.size() << ", Free Nodes: " << available_free_nodes.free_node_structures.size() << std::endl;
         }
     }
 
@@ -858,35 +861,6 @@ Matching getMMSSApproxMaximumMatching(
             // Checking the matching is valid
             matching.verifyMatching();
 
-            // Ending if the phase that has been run has told us to finish early
-            if (! phase_response.first) {
-                return matching;
-            }
-
-            // Scale Skip optimisation - if we find no disjoint augmenting paths after a phase, we skip the current scale.
-            if (optimisations && disjoint_augmenting_paths.empty()) {
-                if (config.progress_report >= SCALE) std::cout << "SCALE SKIP: No augmenting paths found in phase, skipping the remainder of the scale." << std::endl;
-                // TODO: REMOVE REPORT
-                report.open("report.txt", std::ios_base::app);
-                report << matching.matched_edges.size() << "," << overtake_count << "," << contract_count << "," << augment_count << "," << backtrack_count << ",";
-
-                for (AugmentingPath path : disjoint_augmenting_paths) {
-                    std::set<Edge> unique;
-                    for (Edge edge : path.first) {
-                        unique.insert(edge);
-                    }
-                    for (Edge edge : path.second) {
-                        unique.insert(edge);
-                    }
-                    report << unique.size() << " ";
-                }
-                report << std::endl;
-
-                report.close();
-                // REPORT END
-                break;
-            }
-
             // TODO: REMOVE REPORT
             report.open("report.txt", std::ios_base::app);
             report << matching.matched_edges.size() << "," << overtake_count << "," << contract_count << "," << augment_count << "," << backtrack_count << ",";
@@ -905,6 +879,17 @@ Matching getMMSSApproxMaximumMatching(
 
             report.close();
             // REPORT END
+
+            // Ending if the phase that has been run has told us to finish early
+            if (! phase_response.first) {
+                return matching;
+            }
+
+            // Scale Skip optimisation - if we find no disjoint augmenting paths after a phase, we skip the current scale.
+            if (optimisations && disjoint_augmenting_paths.empty()) {
+                if (config.progress_report >= SCALE) std::cout << "SCALE SKIP: No augmenting paths found in phase, skipping the remainder of the scale." << std::endl;
+                break;
+            }
         }
     }
 
@@ -922,7 +907,7 @@ int main() {
     //Stream* stream = new StreamFromFile("example.txt");
     Stream* stream = new StreamFromMemory("test_graph.txt");
 
-    Matching matching = getMMSSApproxMaximumMatching(stream, 0.1, 3, true, false);
+    Matching matching = getMMSSApproxMaximumMatching(stream, 0.25, 3, true, false);
     //std::cout << matching << std::endl;
     std::cout << "Total number of passes: " << stream->number_of_passes << std::endl;
 
