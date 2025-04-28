@@ -4,8 +4,7 @@ A implementation of a (1+ε)-approximation algorithm for maximum matchings in ge
 
 ## Usage Instructions
 
-This implementation can be used by including the `MMSS-Maximum-Matching.h` header file and then creating an edge stream and calling the `getMMSSApproxMaximumMatching()` function, as is shown in the example below.
-
+This algorithm can be used by including the `MMSS-Maximum-Matching.h` header file in your code and then creating an edge stream and calling the `getMMSSApproxMaximumMatching()` function, as is shown in the example below.
 
 ```cpp
 #include "MMSS-Maximum-Matching.h"
