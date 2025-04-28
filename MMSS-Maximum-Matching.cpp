@@ -1,20 +1,5 @@
-#include <fstream>
-#include <iostream>
-#include <set>
+#include "MMSS-Maximum-Matching.h"
 
-#include "Structures/types.h"
-
-#include "Stream/Stream.h"
-#include "Stream/StreamFromFile.h"
-#include "Stream/StreamFromMemory.h"
-#include "Structures/AvailableFreeNodes.h"
-
-#include "Structures/FreeNodeStructure.h"
-#include "Structures/GraphStructure/GraphBlossom.h"
-#include "Structures/GraphStructure/GraphVertex.h"
-#include "Structures/Matching.h"
-
-using namespace std;
 
 /*
 Example Usage:
@@ -760,9 +745,9 @@ Matching get2ApproximateMatching(
 Matching getMMSSApproxMaximumMatching(
     Stream* stream,
     float epsilon,
-    int progress_report = 3,
-    bool optimisations = true,
-    bool early_finish = false
+    int progress_report,
+    bool optimisations,
+    bool early_finish
 ) {
 
     // Setting up the config structure.
