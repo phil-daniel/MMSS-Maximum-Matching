@@ -8,7 +8,7 @@
 #include "GraphStructure/GraphVertex.h"
 #include "GraphStructure/GraphBlossom.h"
 
-#include "../types.h"
+#include "types.h"
 
 
 using namespace std;

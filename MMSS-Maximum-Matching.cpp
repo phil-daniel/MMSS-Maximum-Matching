@@ -2,7 +2,7 @@
 #include <iostream>
 #include <set>
 
-#include "types.h"
+#include "Structures/types.h"
 
 #include "Stream/Stream.h"
 #include "Stream/StreamFromFile.h"
@@ -15,6 +15,26 @@
 #include "Structures/Matching.h"
 
 using namespace std;
+
+/*
+Example Usage:
+int main() {
+    // Creates a new edge stream, using StreamFromFile or StreamFromMemory depending on emulation requirements.
+    //Stream* stream = new StreamFromFile("example.txt");
+    Stream* stream = new StreamFromMemory("example.txt");
+
+    // Call the getMMSSApproxMaximumMatching() function with the relevant parameters.
+    Matching matching = getMMSSApproxMaximumMatching(stream, 0.25, 3, true, false);
+    // A matching is returned.
+    std::cout << matching << std::endl;
+    // The number of passes can be seen by checking the stream.
+    std::cout << "Total number of passes: " << stream->number_of_passes << std::endl;
+
+    delete stream;
+
+    return 0;
+}
+*/
 
 void updateChildLabels(
     GraphNode* parent_matched_vertex,
@@ -815,18 +835,4 @@ Matching getMMSSApproxMaximumMatching(
     }
 
     return matching;
-}
-
-int main() {
-
-    //Stream* stream = new StreamFromFile("example.txt");
-    Stream* stream = new StreamFromMemory("test_graph.txt");
-
-    Matching matching = getMMSSApproxMaximumMatching(stream, 0.25, 3, true, false);
-    //std::cout << matching << std::endl;
-    std::cout << "Total number of passes: " << stream->number_of_passes << std::endl;
-
-    delete stream;
-
-    return 0;
 }

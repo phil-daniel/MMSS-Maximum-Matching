@@ -11,6 +11,7 @@ class StreamFromFile : public Stream {
         bool show_last_edge = false;
         ifstream file{};
 
+    // StreamFromFile provides the edge stream directly from the input text file.
     public:
         explicit StreamFromFile(string file_name);
         pair<int, int> readStream() override;

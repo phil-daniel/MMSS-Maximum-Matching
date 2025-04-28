@@ -17,7 +17,7 @@ add_executable(MaximumMatchings
         Structures/GraphStructure/GraphVertex.h
         Structures/GraphStructure/GraphVertex.cpp
         Structures/GraphStructure/GraphBlossom.cpp
-        types.h
+        Structures/types.h
         Structures/AvailableFreeNodes.cpp
         Structures/AvailableFreeNodes.h
         Structures/Matching.cpp

@@ -2,7 +2,7 @@
 #define AVAILABLEFREENODES_H
 
 #include "FreeNodeStructure.h"
-#include "../types.h"
+#include "types.h"
 
 using namespace std;
 

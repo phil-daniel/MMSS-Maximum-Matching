@@ -3,7 +3,7 @@
 
 #include <set>
 
-#include "../types.h"
+#include "types.h"
 
 class Matching {
     // Variables
